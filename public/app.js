@@ -1,41 +1,45 @@
 const socket = io();
 
-// ==========================================
-// REFERENCIAS AL DOM
-// ==========================================
+// Referencias DOM - Navegación
 const seccionLogin = document.getElementById('seccion-login');
 const seccionLobby = document.getElementById('seccion-lobby');
 const seccionJuego = document.getElementById('seccion-juego');
 
-// Controles de Login
+// Controles Login
 const btnCrearSala = document.getElementById('btn-crear-sala');
 const btnUnirse = document.getElementById('btn-unirse');
 const inputNickname = document.getElementById('input-nickname');
 const inputCodigo = document.getElementById('input-codigo');
 const mensajeError = document.getElementById('mensaje-error');
 
-// Controles de Sala de Espera (Lobby)
+// Controles Lobby (Anfitrión)
 const lobbyCodigoDisplay = document.getElementById('lobby-codigo-display');
-const listaJugadores = document.getElementById('lista-jugadores');
 const panelAnfitrionConfig = document.getElementById('panel-anfitrion-config');
 const panelAnfitrionControles = document.getElementById('panel-anfitrion-controles');
-const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
-const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
-const btnElementOpts = document.querySelectorAll('.btn-element-opt');
+const inputNombreConcurso = document.getElementById('input-nombre-concurso');
+const inputDuracion = document.getElementById('input-duracion');
+const inputReglas = document.getElementById('input-reglas');
 const inputNumElementos = document.getElementById('select-num-elementos');
+const btnElementOpts = document.querySelectorAll('.btn-element-opt');
+const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
 
-// Controles del Juego
-const juegoCodigoDisplay = document.getElementById('juego-codigo-display');
+// Controles Lobby (Concursantes)
+const panelReglasConcursante = document.getElementById('panel-reglas-concursante');
+const displayNombreConcurso = document.getElementById('display-nombre-concurso');
+const displayReglasTexto = document.getElementById('display-reglas-texto');
+const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
+const listaJugadores = document.getElementById('lista-jugadores');
+
+// Controles Juego
+const juegoTituloDisplay = document.getElementById('juego-titulo-display');
+const cronometro = document.getElementById('cronometro');
 const leaderboard = document.getElementById('leaderboard');
 const tableroCartas = document.getElementById('tablero-cartas');
 
-// Estado local
 let miCodigoSala = null;
 let esAnfitrion = false;
 
-// ==========================================
-// SELECCIÓN VISUAL DE ELEMENTOS EN LOBBY
-// ==========================================
+// Selector visual de cartas
 btnElementOpts.forEach(btn => {
   btn.addEventListener('click', () => {
     btnElementOpts.forEach(b => b.classList.remove('active'));
@@ -44,9 +48,7 @@ btnElementOpts.forEach(btn => {
   });
 });
 
-// ==========================================
 // 1. CREAR SALA (ANFITRIÓN)
-// ==========================================
 btnCrearSala.addEventListener('click', () => {
   socket.emit('crear_sala');
 });
@@ -55,21 +57,18 @@ socket.on('sala_creada', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = true;
 
-  // Cambiar a la Sala de Espera
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
-  // Mostrar la configuración y controles solo al anfitrión
   panelAnfitrionConfig.classList.remove('hidden');
   panelAnfitrionControles.classList.remove('hidden');
+  panelReglasConcursante.classList.add('hidden');
   pantallaEsperaConcursante.classList.add('hidden');
   mensajeError.textContent = '';
 });
 
-// ==========================================
 // 2. UNIRSE A SALA (CONCURSANTE)
-// ==========================================
 btnUnirse.addEventListener('click', () => {
   const nickname = inputNickname.value.trim();
   const codigoSala = inputCodigo.value.trim().toUpperCase();
@@ -82,29 +81,29 @@ btnUnirse.addEventListener('click', () => {
   socket.emit('unirse_sala', { codigoSala, nickname });
 });
 
-socket.on('unido_exitosamente', ({ codigoSala }) => {
+socket.on('unido_exitosamente', ({ codigoSala, configuracion }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = false;
 
-  // Cambiar a la Sala de Espera del Concursante
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
-  // Ocultar opciones de anfitrión y mostrar banner de espera
   panelAnfitrionConfig.classList.add('hidden');
   panelAnfitrionControles.classList.add('hidden');
+  panelReglasConcursante.classList.remove('hidden');
   pantallaEsperaConcursante.classList.remove('hidden');
+
+  if (configuracion) {
+    displayNombreConcurso.textContent = configuracion.nombreConcurso;
+    displayReglasTexto.textContent = configuracion.reglas;
+  }
   mensajeError.textContent = '';
 });
 
-socket.on('error_login', (msg) => {
-  mensajeError.textContent = msg;
-});
+socket.on('error_login', (msg) => { mensajeError.textContent = msg; });
 
-// ==========================================
-// 3. ACTUALIZACIÓN DE LOBBY EN TIEMPO REAL
-// ==========================================
+// Actualización de Concursantes en Lobby
 socket.on('actualizar_lista_espera', ({ jugadores }) => {
   listaJugadores.innerHTML = '';
   jugadores.forEach((j) => {
@@ -115,35 +114,51 @@ socket.on('actualizar_lista_espera', ({ jugadores }) => {
   });
 });
 
-// ==========================================
-// 4. INICIAR CONCURSO (SOLO ANFITRIÓN)
-// ==========================================
+// 3. INICIAR CONCURSO (ENVIAR CONFIGURACIÓN COMPLETA AL SERVIDOR)
 btnIniciarConcurso.addEventListener('click', () => {
   if (miCodigoSala && esAnfitrion) {
-    const numElementos = parseInt(inputNumElementos.value, 10) || 8;
-    socket.emit('iniciar_concurso', { codigoSala: miCodigoSala, numElementos });
+    const config = {
+      codigoSala: miCodigoSala,
+      nombreConcurso: inputNombreConcurso.value.trim() || 'Concurso de Química',
+      duracionSegundos: parseInt(inputDuracion.value, 10) || 120,
+      reglas: inputReglas.value.trim() || 'Sin reglas especificadas.',
+      numElementos: parseInt(inputNumElementos.value, 10) || 8
+    };
+
+    socket.emit('iniciar_concurso', config);
   }
 });
 
-socket.on('concurso_iniciado', ({ tablero, puntuaciones }) => {
+// 4. EMPIEZA EL CONCURSO
+socket.on('concurso_iniciado', ({ tablero, puntuaciones, nombreConcurso, duracionSegundos }) => {
   seccionLobby.classList.add('hidden');
   seccionJuego.classList.remove('hidden');
-  juegoCodigoDisplay.textContent = miCodigoSala;
+  
+  juegoTituloDisplay.textContent = nombreConcurso;
+  iniciarCronometroVisual(duracionSegundos);
 
   renderizarTablero(tablero);
   actualizarLeaderboard(puntuaciones);
 });
 
-socket.on('error_inicio', (msg) => {
-  alert(msg);
-});
+function iniciarCronometroVisual(segundos) {
+  let tiempoRestante = segundos;
+  
+  const timer = setInterval(() => {
+    const min = Math.floor(tiempoRestante / 60);
+    const seg = tiempoRestante % 60;
+    cronometro.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
 
-// ==========================================
-// 5. RENDERIZADO Y JUEGO
-// ==========================================
+    if (tiempoRestante <= 0) {
+      clearInterval(timer);
+      cronometro.textContent = "¡TIEMPO FINALIZADO!";
+    }
+    tiempoRestante--;
+  }, 1000);
+}
+
 function renderizarTablero(cartas) {
   tableroCartas.innerHTML = '';
-  
   cartas.forEach((carta) => {
     const cardEl = document.createElement('div');
     cardEl.className = 'carta';
@@ -170,18 +185,12 @@ function renderizarTablero(cartas) {
   });
 }
 
-socket.on('actualizar_tablero', ({ tablero }) => {
-  renderizarTablero(tablero);
-});
-
-socket.on('actualizar_puntuaciones', ({ puntuaciones }) => {
-  actualizarLeaderboard(puntuaciones);
-});
+socket.on('actualizar_tablero', ({ tablero }) => { renderizarTablero(tablero); });
+socket.on('actualizar_puntuaciones', ({ puntuaciones }) => { actualizarLeaderboard(puntuaciones); });
 
 function actualizarLeaderboard(puntuaciones) {
-  leaderboard.innerHTML = '<strong>Clasificación:</strong> ';
+  leaderboard.innerHTML = '<strong>Tabla de Posiciones:</strong> ';
   const listaOrdenada = Object.values(puntuaciones).sort((a, b) => b.puntos - a.puntos);
-
   listaOrdenada.forEach((p, idx) => {
     const item = document.createElement('span');
     item.className = 'jugador-score';
