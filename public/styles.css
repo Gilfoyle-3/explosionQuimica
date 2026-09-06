@@ -99,7 +99,35 @@ input:focus {
   box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
-/* BOTONES CON BORDES DIFERENCIADOS */
+/* CHECKBOXES ESTILIZADOS */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(3, 7, 18, 0.5);
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--neon-cyan);
+  cursor: pointer;
+}
+
+/* BOTONES */
 button {
   width: 100%;
   background: linear-gradient(135deg, #0284c7 0%, #7c3aed 50%, #db2777 100%);
@@ -247,12 +275,12 @@ button.btn-iniciar {
   cursor: pointer;
   user-select: none;
   position: relative;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
   padding: 4px;
 }
 
 .card .symbol {
-  font-size: clamp(0.75rem, 3vw, 1rem);
+  font-size: clamp(0.85rem, 3.5vw, 1.1rem);
   font-weight: 800;
   text-align: center;
   line-height: 1.1;
@@ -282,10 +310,12 @@ button.btn-iniciar {
   pointer-events: none;
 }
 
+/* EFECTO PARA DESAPARECER CARTAS ESPECIALES */
 .card.power-used {
   opacity: 0;
   transform: scale(0);
   pointer-events: none;
+  transition: all 0.5s ease;
 }
 
 #codigo-display {
