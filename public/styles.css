@@ -84,7 +84,7 @@ body {
 .grid-login {
   display: flex;
   gap: 25px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 @media (max-width: 768px) {
@@ -187,7 +187,7 @@ input:focus {
   font-weight: bold;
 }
 
-/* LOBBY Y REGLAS */
+/* REGLAS EN LOBBY */
 .lobby-header {
   display: flex;
   justify-content: space-between;
@@ -287,29 +287,44 @@ input[type="range"] {
   font-weight: bold;
 }
 
-.waiting-banner {
+/* VISTA ANFITRIÓN (RANKING DESTACADO) */
+.ranking-title {
+  text-align: center;
+  color: var(--gold);
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.ranking-big-list {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.ranking-card {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-  color: var(--text-muted);
+  background: linear-gradient(90deg, rgba(112,0,255,0.3), rgba(0,240,255,0.1));
+  border: 1px solid var(--primary);
+  padding: 15px 25px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255,255,255,0.1);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.ranking-pos {
+  color: var(--gold);
+  font-size: 1.5rem;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.ranking-pts {
+  color: var(--primary);
 }
 
-/* TABLERO DE JUEGO */
+/* VISTA JUGADOR (TABLERO) */
 .game-header {
   display: flex;
   justify-content: space-between;
