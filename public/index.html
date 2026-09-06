@@ -13,7 +13,7 @@
     
     <header class="hud-header">
       <h1 class="glitch">CYBER_CHEM</h1>
-      <p class="subtitle">> VALENCE MATCHING GAME</p>
+      <p class="subtitle">> VALENCE MATCHING GAME (TRIO MATCH)</p>
     </header>
 
     <!-- PÁGINA PRINCIPAL -->
@@ -21,10 +21,32 @@
       <div class="hud-controls vertical">
         <button class="cyber-btn primary" onclick="mostrarSeccion('pantalla-crear')">⚗️ CREAR CONCURSO (HOST)</button>
         <button class="cyber-btn warning" onclick="mostrarSeccion('pantalla-ingresar')">🧪 UNIRSE A CONCURSO</button>
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-reglas')">📜 REGLAS DEL JUEGO</button>
       </div>
     </section>
 
-    <!-- CREAR CONCURSO CON CHECKBOXES DE CATEGORÍAS -->
+    <!-- REGLAS DEL JUEGO -->
+    <section id="pantalla-reglas" class="seccion">
+      <h2 class="cyber-title">REGLAS DEL JUEGO</h2>
+      <div class="rules-box">
+        <p>1. <b>El Objetivo:</b> Para ganar 100 puntos debes encontrar el trío completo correspondiente al mismo elemento:</p>
+        <div class="trio-preview">
+          <span class="badge">Símbolo (ej: Al)</span> + 
+          <span class="badge">Nombre (ej: Aluminio)</span> + 
+          <span class="badge">Valencia (ej: +3)</span>
+        </div>
+        <p>2. <b>Cartas de Poder Especiales:</b></p>
+        <ul>
+          <li>💣 <b>Bomba:</b> Voltea todas las cartas adyacentes a su alrededor durante 3 segundos.</li>
+          <li>🌪️ <b>Tornado:</b> Mezcla aleatoriamente las posiciones de todas las cartas no resueltas del tablero.</li>
+        </ul>
+      </div>
+      <div class="hud-controls">
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">VOLVER</button>
+      </div>
+    </section>
+
+    <!-- CREAR CONCURSO -->
     <section id="pantalla-crear" class="seccion">
       <h2 class="cyber-title">CONFIGURAR SALA</h2>
       
