@@ -146,7 +146,24 @@ function extractNumbers(str) {
 function crearConcurso() {
   const nombre = document.getElementById('nombreConcurso').value || 'Torneo Química';
   const tiempo = document.getElementById('tiempoConcurso').value || 60;
+  
+  const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');
+  const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
+
+  if (selectedCategories.length === 0) {
+    alert('Debes seleccionar al menos una categoría de la tabla.');
+    return;
+  }
+
+  const elementosFiltrados = ELEMENT_DATABASE.filter(elem => {
+    if (selectedCategories.includes('fixed') && elem.cat.includes('_fixed')) return true;
+    if (selectedCategories.includes('variable') && elem.cat === 'variable') return true;
+    if (selectedCategories.includes('nometal') && elem.cat === 'nometal') return true;
+    return false;
+  });
+
   esHost = true;
+  window.elementosPartida = elementosFiltrados;
   socket.emit('createRoom', { nombre, tiempo });
 }
 
@@ -165,7 +182,8 @@ function unirseConcurso() {
 
 function iniciarConcurso() {
   if (salaActual) {
-    socket.emit('startGameHost', { roomId: salaActual, elements: ELEMENT_DATABASE });
+    const elementosEnviar = window.elementosPartida || ELEMENT_DATABASE;
+    socket.emit('startGameHost', { roomId: salaActual, elements: elementosEnviar });
   }
 }
 
@@ -252,12 +270,12 @@ function handleCardClick(cardEl, cardData, idx) {
   AudioFX.playFlip();
 
   if (cardData.type === 'power_bomb') {
-    activarBomba(idx);
+    activarBomba(cardEl, idx);
     return;
   }
 
   if (cardData.type === 'power_tornado') {
-    activarTornado(idx);
+    activarTornado(cardEl, idx);
     return;
   }
 
@@ -270,7 +288,7 @@ function handleCardClick(cardEl, cardData, idx) {
   if (cardData.type === 'name') tagTexto = 'NOMBRE';
   if (cardData.type === 'valence') {
     tagTexto = 'VALENCIA';
-    textoMostrado = `VAL: ${cardData.content}`;
+    textoMostrado = cardData.content; // SOLO MUESTRA LOS NÚMEROS Y SIGNOS
   }
 
   cardEl.querySelector('.symbol').innerText = textoMostrado;
@@ -337,16 +355,16 @@ function checkTrioMatch() {
   }
 }
 
-function activarBomba(index) {
+function activarBomba(cardEl, index) {
   AudioFX.playBomb();
+  
+  // MOSTRAR LA CARTA DE BOMBA
+  cardEl.classList.add('flipped');
+  cardEl.querySelector('.symbol').innerText = '💣';
+  cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
+
   const allCards = document.querySelectorAll('.card');
   const cols = 4;
-  
-  const bombCardEl = allCards[index];
-  if (bombCardEl) {
-    bombCardEl.classList.add('power-used');
-    currentDeck[index].matched = true;
-  }
 
   const radioIndexes = [
     index - 1, index + 1,
@@ -354,18 +372,23 @@ function activarBomba(index) {
     index + cols, index + cols - 1, index + cols + 1
   ];
 
+  // REVELAR VECINAS
   radioIndexes.forEach(i => {
     if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
       const data = currentDeck[i];
       if (data) {
         allCards[i].classList.add('flipped');
-        allCards[i].querySelector('.symbol').innerText = data.type === 'valence' ? `VAL: ${data.content}` : data.content;
+        allCards[i].querySelector('.symbol').innerText = data.content;
         allCards[i].querySelector('.type-tag').innerText = data.type.toUpperCase();
       }
     }
   });
 
+  // OCULTAR VECINAS Y DESAPARECER LA BOMBA LUEGO DE UN MOMENTO
   setTimeout(() => {
+    cardEl.classList.add('power-used');
+    currentDeck[index].matched = true;
+
     radioIndexes.forEach(i => {
       if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
         allCards[i].classList.remove('flipped');
@@ -373,25 +396,29 @@ function activarBomba(index) {
         allCards[i].querySelector('.type-tag').innerText = 'TOCAR';
       }
     });
-  }, 2500);
+  }, 1500);
 }
 
-function activarTornado(index) {
+function activarTornado(cardEl, index) {
   AudioFX.playBomb();
-  const allCards = document.querySelectorAll('.card');
-  if (allCards[index]) {
-    allCards[index].classList.add('power-used');
-    currentDeck[index].matched = true;
-  }
 
-  flippedCards.forEach(c => {
-    c.element.classList.remove('flipped');
-    c.element.querySelector('.symbol').innerText = '?';
-    c.element.querySelector('.type-tag').innerText = 'TOCAR';
-  });
-  flippedCards = [];
+  // MOSTRAR LA CARTA DE TORNADO
+  cardEl.classList.add('flipped');
+  cardEl.querySelector('.symbol').innerText = '🌪️';
+  cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
 
+  // DESAPARECER TORNADO Y REORDENAR MAZO
   setTimeout(() => {
+    cardEl.classList.add('power-used');
+    currentDeck[index].matched = true;
+
+    flippedCards.forEach(c => {
+      c.element.classList.remove('flipped');
+      c.element.querySelector('.symbol').innerText = '?';
+      c.element.querySelector('.type-tag').innerText = 'TOCAR';
+    });
+    flippedCards = [];
+
     const unmatched = currentDeck.filter(c => !c.matched);
     unmatched.sort(() => Math.random() - 0.5);
 
@@ -402,7 +429,7 @@ function activarTornado(index) {
       }
     }
     renderBoard(currentDeck);
-  }, 400);
+  }, 1500);
 }
 
 function actualizarTablaRanking(players) {
