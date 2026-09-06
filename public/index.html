@@ -15,39 +15,33 @@
       <h1 class="logo">EXPLOSIÓN <span class="highlight">QUÍMICA</span> 💥</h1>
     </header>
 
-    <!-- 1. PRIMERA PÁGINA: LOGIN Y CREAR -->
+    <!-- 1. LOGIN / CREAR SALA -->
     <section id="seccion-login" class="panel-card">
       <div class="grid-login">
-        <!-- BLOQUE ANFITRIÓN -->
         <div class="sub-panel host-panel">
           <h2>👑 ANFITRIÓN</h2>
-          <p class="panel-desc">Crea una nueva sala para tus estudiantes</p>
+          <p class="panel-desc">Crea un nuevo concurso de química</p>
           <button id="btn-crear-sala" class="btn btn-primary glow-primary">🚀 Crear Sala de Concurso</button>
         </div>
 
         <div class="divider"><span>O</span></div>
 
-        <!-- BLOQUE CONCURSANTE -->
         <div class="sub-panel player-panel">
           <h2>🎮 CONCURSANTE</h2>
-          <p class="panel-desc">Ingresa tus datos para unirte al juego</p>
-
+          <p class="panel-desc">Ingresa tus datos para unirte</p>
           <div class="input-group">
             <input type="text" id="input-nickname" placeholder="Tu Nombre / Apodo" maxlength="15" autocomplete="off">
           </div>
-
           <div class="input-group">
             <input type="text" id="input-codigo" placeholder="Código de Sala (6 dígitos)" maxlength="6" autocomplete="off">
           </div>
-
           <button id="btn-unirse" class="btn btn-secondary glow-secondary">⚡ Entrar al Concurso</button>
         </div>
       </div>
-
       <p id="mensaje-error" class="error-msg"></p>
     </section>
 
-    <!-- 2. SEGUNDA PÁGINA: SALA DE ESPERA (LOBBY) -->
+    <!-- 2. LOBBY Y CONFIGURACIÓN COMPLETA DEL ANFITRIÓN -->
     <section id="seccion-lobby" class="panel-card hidden">
       <div class="lobby-header">
         <h2>SALA DE ESPERA</h2>
@@ -57,9 +51,28 @@
         </div>
       </div>
 
-      <!-- PANEL DE CONFIGURACIÓN (SOLO VISIBLE PARA EL ANFITRIÓN) -->
+      <!-- PANEL DE CONFIGURACIÓN DEL CONCURSO (SOLO ANFITRIÓN) -->
       <div id="panel-anfitrion-config" class="config-container hidden">
-        <label class="config-label">Selecciona la cantidad de elementos para la partida:</label>
+        <h3>⚙️ CONFIGURACIÓN DEL CONCURSO</h3>
+        
+        <div class="config-grid">
+          <div class="input-group">
+            <label>Nombre del Concurso:</label>
+            <input type="text" id="input-nombre-concurso" placeholder="Ej: Torneo de Valencias 4to A" value="Torneo de Valencias Química">
+          </div>
+
+          <div class="input-group">
+            <label>Duración del Concurso (Segundos):</label>
+            <input type="number" id="input-duracion" placeholder="Segundos" value="120" min="30" max="600">
+          </div>
+        </div>
+
+        <div class="input-group full-width">
+          <label>Reglas e Instrucciones del Concurso:</label>
+          <textarea id="input-reglas" rows="2" placeholder="Escribe aquí las reglas del concurso...">1. Junta los trios (Nombre + Símbolo + Valencia).&#10;2. Evita las cartas bomba.&#10;3. ¡El jugador con más puntos al acabarse el tiempo gana!</textarea>
+        </div>
+
+        <label class="config-label">Cantidad de elementos a incluir:</label>
         <div class="element-selector-grid">
           <button type="button" class="btn-element-opt" data-val="4">
             <span class="num">4</span>
@@ -81,27 +94,37 @@
         <input type="hidden" id="select-num-elementos" value="8">
       </div>
 
+      <!-- VISTA DE REGLAS PARA CONCURSANTES EN ESPERA -->
+      <div id="panel-reglas-concursante" class="reglas-box hidden">
+        <h4 id="display-nombre-concurso">Cargando Concurso...</h4>
+        <p><strong>📜 Reglas del Concurso:</strong></p>
+        <div id="display-reglas-texto">Cargando reglas...</div>
+      </div>
+
       <div class="lobby-content">
-        <h3>CONCURSANTES CONECTADOS</h3>
+        <h3>CONCURSANTE(S) CONECTADOS</h3>
         <ul id="lista-jugadores" class="players-grid"></ul>
       </div>
 
-      <!-- ACCIONES DE INICIO (ANFITRIÓN) -->
+      <!-- BOTÓN DE INICIO PARA ANFITRIÓN -->
       <div id="panel-anfitrion-controles" class="lobby-actions hidden">
         <button id="btn-iniciar-concurso" class="btn btn-action glow-action">🔥 ¡INICIAR CONCURSO AHORA!</button>
       </div>
 
-      <!-- PANTALLA DE ESPERA (CONCURSANTE) -->
+      <!-- BANNER DE ESPERA PARA CONCURSANTES -->
       <div id="pantalla-espera-concursante" class="waiting-banner hidden">
         <div class="spinner"></div>
-        <p>Esperando a que el anfitrión inicie el juego...</p>
+        <p>Esperando a que el anfitrión inicie la partida...</p>
       </div>
     </section>
 
-    <!-- 3. TERCERA PÁGINA: TABLERO DE JUEGO -->
+    <!-- 3. TABLERO Y CRONÓMETRO DE JUEGO -->
     <section id="seccion-juego" class="panel-card hidden">
       <div class="game-header">
-        <div class="game-info">SALA: <span id="juego-codigo-display">------</span></div>
+        <div class="game-info">
+          <h2 id="juego-titulo-display">CONCURSO DE QUÍMICA</h2>
+          <span>TIEMPO: <strong id="cronometro">00:00</strong></span>
+        </div>
         <div id="leaderboard" class="leaderboard-bar"></div>
       </div>
 
