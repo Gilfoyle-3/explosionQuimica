@@ -13,14 +13,36 @@
     <!-- PANTALLA PRINCIPAL DE INICIO -->
     <div id="pantalla-inicio" class="seccion activa">
       <h1>CHEM CLASH</h1>
+      <p style="text-align:center; font-weight:600; color:var(--text-muted); font-size:0.9rem;">
+        ¡Desafío de Química Multiplayer!
+      </p>
+
+      <!-- UNIRSE A PARTIDA -->
       <div class="panel">
-        <input type="text" id="nombreJugador" placeholder="Ingresa tu Alias Gamer">
+        <div style="font-weight:800; color:var(--neon-cyan); font-size:0.9rem; text-transform:uppercase;">Unirse a Sala</div>
+        <input type="text" id="nombreJugador" placeholder="Tu Alias Gamer">
         <input type="text" id="codigoIngreso" placeholder="Código de Sala (6 dígitos)">
         <button class="btn-iniciar" onclick="unirseConcurso()">Unirse a Partida</button>
       </div>
       
+      <!-- CREAR SALA -->
       <div class="panel">
+        <div style="font-weight:800; color:var(--neon-purple); font-size:0.9rem; text-transform:uppercase;">Host / Profesor</div>
         <button class="btn-secundario" onclick="mostrarSeccion('pantalla-crear')">Crear Sala de Concurso</button>
+      </div>
+
+      <!-- REGLAS DEL JUEGO -->
+      <div class="panel" style="background: rgba(3, 7, 18, 0.7); border-color: rgba(255, 255, 255, 0.1);">
+        <div style="font-weight:900; color:var(--neon-gold); font-size:0.95rem; text-transform:uppercase; text-align:center;">
+          📜 Reglas del Juego
+        </div>
+        <ul style="color: var(--text-main); font-size:0.85rem; line-height:1.5; padding-left:18px; display:flex; flex-direction:column; gap:8px;">
+          <li><b>Estructura de Tríos:</b> Debes voltear 3 cartas para formar un trío válido compuesto por <b>Símbolo + Nombre + Valencia correcta</b>.</li>
+          <li><b>Puntuación:</b> Cada trío correcto te otorga <b>+100 Puntos</b>.</li>
+          <li><b>Power-Up Bomba (💣):</b> Revela momentáneamente las cartas adyacentes.</li>
+          <li><b>Power-Up Tornado (🌪️):</b> Mezcla todas las cartas del tablero que aún no han sido emparejadas.</li>
+          <li><b>Ganador:</b> El jugador con más puntos al finalizar el tiempo gana la partida.</li>
+        </ul>
       </div>
     </div>
 
@@ -30,8 +52,8 @@
       <div class="panel">
         <input type="text" id="nombreConcurso" placeholder="Nombre del Torneo">
         <input type="number" id="tiempoConcurso" placeholder="Tiempo en Segundos (ej: 60)" value="60">
-        <button onclick="crearConcurso()">Generar Código</button>
-        <button class="btn-secundario" onclick="mostrarSeccion('pantalla-inicio')">Volver</button>
+        <button class="btn-iniciar" onclick="crearConcurso()">Generar Código</button>
+        <button class="btn-secundario" onclick="mostrarSeccion('pantalla-inicio')">Volver al Inicio</button>
       </div>
     </div>
 
@@ -40,17 +62,18 @@
       <h2>CÓDIGO DE SALA</h2>
       <div id="codigo-display">------</div>
       <div class="panel">
-        <div style="text-align:center; font-weight:800; color:var(--neon-cyan)">JUGADORES EN ESPERA:</div>
-        <div id="lista-jugadores-host"></div>
+        <div style="text-align:center; font-weight:800; color:var(--neon-cyan); font-size:0.9rem;">JUGADORES CONECTADOS:</div>
+        <div id="lista-jugadores-host" style="display:flex; flex-direction:column; gap:8px;"></div>
         <button class="btn-iniciar" onclick="iniciarConcurso()">Iniciar Partida</button>
+        <button class="btn-secundario" onclick="mostrarSeccion('pantalla-inicio')">Cancelar</button>
       </div>
     </div>
 
     <!-- PANTALLA DE JUEGO JUGADOR -->
     <div id="pantalla-juego" class="seccion">
       <div style="display:flex; justify-content:space-between; align-items:center; font-weight:900;">
-        <span style="color:var(--neon-cyan)">PUNTOS: <span id="mis-puntos">0</span></span>
-        <span style="color:var(--neon-gold)" id="cronometro-jugador">60s</span>
+        <span style="color:var(--neon-cyan); font-size:1.1rem;">PUNTOS: <span id="mis-puntos">0</span></span>
+        <span style="color:var(--neon-gold); font-size:1.1rem;" id="cronometro-jugador">60s</span>
       </div>
       <div id="tablero"></div>
     </div>
@@ -58,8 +81,13 @@
     <!-- LEADERBOARD / RANKING ESPORTS -->
     <div id="pantalla-ranking" class="seccion">
       <h2 id="titulo-ranking">LEADERBOARD</h2>
-      <div style="text-align:center; font-weight:900; color:var(--neon-gold)">TIEMPO RESTANTE: <span id="cronometro-host">60</span>s</div>
+      <div style="text-align:center; font-weight:900; color:var(--neon-gold); margin-bottom:10px;">
+        TIEMPO RESTANTE: <span id="cronometro-host">60</span>s
+      </div>
       <div id="tabla-ranking"></div>
+      <div style="margin-top:15px;">
+        <button class="btn-secundario" onclick="mostrarSeccion('pantalla-inicio')">Salir al Inicio</button>
+      </div>
     </div>
 
   </div>
