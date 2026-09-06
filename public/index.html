@@ -3,132 +3,230 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Explosión Química - eSports Edition</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Química Pro - Concurso de Valencias</title>
   <script src="/socket.io/socket.io.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="cyber-grid"></div>
 
-  <main class="main-container">
-    <header class="app-header">
-      <h1 class="logo">VALENCIA <span class="highlight">CLASH</span> ⚡</h1>
-      <p class="subtitle">TORNEO INTERACTIVO DE QUÍMICA</p>
-    </header>
-
-    <!-- 1. LOGIN / UNIRSE AL JUEGO -->
-    <section id="seccion-login" class="panel-card">
-      <div class="grid-login">
-        <div class="sub-panel host-panel">
-          <h2>👑 ANFITRIÓN</h2>
-          <p class="panel-desc">Crea una sala para proyectar el ranking</p>
-          <button id="btn-crear-sala" class="btn btn-primary glow-primary">🚀 Crear Nueva Sala</button>
+<div class="glass-panel">
+  <!-- VISTA 1: CREAR O UNIRSE -->
+  <div id="vista-inicio">
+    <h1>⚛️ Química Pro</h1>
+    <div class="grid-container">
+      <div>
+        <h2>Crear Concurso</h2>
+        <button class="btn" onclick="crearSala()">✨ Crear Nueva Sala</button>
+      </div>
+      <div>
+        <h2>Unirse a Juego</h2>
+        <div class="input-group">
+          <label>Código de Sala</label>
+          <input type="text" id="input-codigo" placeholder="Ej: 549210">
         </div>
+        <div class="input-group">
+          <label>Tu Apodo</label>
+          <input type="text" id="input-nickname" placeholder="Ej: ProfeQuimico">
+        </div>
+        <button class="btn" style="background: linear-gradient(90deg, #10b981, #059669);" onclick="unirseSala()">🚀 Entrar a Sala</button>
+      </div>
+    </div>
+  </div>
 
-        <div class="divider"><span>VS</span></div>
+  <!-- VISTA 2: SALA DE ESPERA (CÓDIGO GENERADO) -->
+  <div id="vista-lobby" class="oculto">
+    <h2>Sala de Espera: <span id="lbl-codigo" style="color: var(--accent-neon);">------</span></h2>
+    <p style="text-align:center; color:#94a3b8; margin-bottom: 20px;">Comparte este código con los concursantes</p>
 
-        <div class="sub-panel player-panel">
-          <h2>🎮 JUGADOR</h2>
-          <p class="panel-desc">Entra con tus datos para responder en vivo</p>
+    <div class="grid-container">
+      <div id="panel-configuracion">
+        <h3>⚙️ Ajustes del Juego</h3>
+        <div class="input-group" style="margin-top:10px;">
+          <label>Nombre del Concurso</label>
+          <input type="text" id="cfg-nombre" value="Gran Torneo Química">
+        </div>
+        <div class="input-group">
+          <label>Duración (Segundos)</label>
+          <input type="number" id="cfg-tiempo" value="120">
+        </div>
+        <div class="input-group">
+          <label>Cantidad de Elementos (Tríos)</label>
+          <select id="cfg-elementos">
+            <option value="4">4 Elementos (12 Cartas)</option>
+            <option value="8" selected>8 Elementos (24 Cartas)</option>
+            <option value="12">12 Elementos (36 Cartas)</option>
+            <option value="16">16 Elementos (48 Cartas)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Familias Permitidas</label>
+          <div id="lista-familias" class="checkbox-grid"></div>
+        </div>
+        <button class="btn" id="btn-iniciar" onclick="iniciarConcurso()">🔥 Comenzar Concurso</button>
+      </div>
 
-          <div class="input-group">
-            <label>Tu Nickname:</label>
-            <input type="text" id="input-nickname" placeholder="Ej. ProGamer123" maxlength="15" autocomplete="off">
+      <div>
+        <h3>👥 Jugadores en Sala</h3>
+        <div id="lista-jugadores" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA 3: TABLERO DE JUEGO -->
+  <div id="vista-juego" class="oculto">
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:15px;">
+      <h2 id="txt-titulo-concurso">Química Pro</h2>
+      <h3 style="color:var(--accent-pink)">⏱️ <span id="txt-cronometro">120</span>s</h3>
+    </div>
+    
+    <div class="grid-container" style="grid-template-columns: 1fr 280px;">
+      <div id="tablero-cartas" class="board-grid"></div>
+      <div>
+        <h3>🏆 Marcador</h3>
+        <div id="tabla-puntuaciones" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const socket = io();
+  let miCodigoSala = '';
+  let esAnfitrion = false;
+
+  function crearSala() {
+    socket.emit('crear_sala');
+  }
+
+  function unirseSala() {
+    const codigoSala = document.getElementById('input-codigo').value.trim();
+    const nickname = document.getElementById('input-nickname').value.trim();
+    socket.emit('unirse_sala', { codigoSala, nickname });
+  }
+
+  function iniciarConcurso() {
+    const nombreConcurso = document.getElementById('cfg-nombre').value;
+    const duracionSegundos = document.getElementById('cfg-tiempo').value;
+    const cantidadElementos = document.getElementById('cfg-elementos').value;
+
+    const familias = [];
+    document.querySelectorAll('.fam-check:checked').forEach(cb => familias.push(cb.value));
+
+    socket.emit('iniciar_concurso', {
+      codigoSala: miCodigoSala,
+      nombreConcurso,
+      duracionSegundos,
+      cantidadElementos,
+      familias
+    });
+  }
+
+  socket.on('sala_creada', ({ codigoSala, familiasDisponibles }) => {
+    miCodigoSala = codigoSala;
+    esAnfitrion = true;
+    
+    document.getElementById('lbl-codigo').innerText = codigoSala;
+    document.getElementById('vista-inicio').classList.add('oculto');
+    document.getElementById('vista-lobby').classList.remove('oculto');
+
+    const contFamilias = document.getElementById('lista-familias');
+    contFamilias.innerHTML = '';
+    familiasDisponibles.forEach(fam => {
+      contFamilias.innerHTML += `
+        <label class="checkbox-item">
+          <input type="checkbox" class="fam-check" value="${fam}" checked> ${fam}
+        </label>
+      `;
+    });
+
+    socket.emit('unirse_sala', { codigoSala, nickname: 'Anfitrión (Host)' });
+  });
+
+  socket.on('unido_exitosamente', ({ codigoSala }) => {
+    miCodigoSala = codigoSala;
+    document.getElementById('lbl-codigo').innerText = codigoSala;
+    document.getElementById('vista-inicio').classList.add('oculto');
+    document.getElementById('vista-lobby').classList.remove('oculto');
+
+    if (!esAnfitrion) {
+      document.getElementById('panel-configuracion').style.opacity = '0.5';
+      document.getElementById('panel-configuracion').style.pointerEvents = 'none';
+      document.getElementById('btn-iniciar').classList.add('oculto');
+    }
+  });
+
+  socket.on('actualizar_lista_espera', ({ jugadores }) => {
+    const cont = document.getElementById('lista-jugadores');
+    cont.innerHTML = '';
+    jugadores.forEach(j => {
+      cont.innerHTML += `<div class="player-badge"><span>👤 ${j.nickname}</span><span style="color:var(--accent-neon)">Listo</span></div>`;
+    });
+  });
+
+  socket.on('concurso_iniciado', ({ tablero, puntuaciones, nombreConcurso, duracionSegundos }) => {
+    document.getElementById('vista-lobby').classList.add('oculto');
+    document.getElementById('vista-juego').classList.remove('oculto');
+    document.getElementById('txt-titulo-concurso').innerText = nombreConcurso;
+
+    renderizarTablero(tablero);
+    renderizarPuntuaciones(puntuaciones);
+    iniciarTemporizador(duracionSegundos);
+  });
+
+  socket.on('actualizar_tablero', ({ tablero }) => renderizarTablero(tablero));
+  socket.on('actualizar_puntuaciones', ({ puntuaciones }) => renderizarPuntuaciones(puntuaciones));
+  socket.on('error_login', (msg) => alert(`Error: ${msg}`));
+
+  function renderizarTablero(tablero) {
+    const cont = document.getElementById('tablero-cartas');
+    cont.innerHTML = '';
+
+    tablero.forEach(carta => {
+      const cardEl = document.createElement('div');
+      cardEl.className = `card-3d ${carta.revelada ? 'flipped' : ''} ${carta.emparejada ? 'matched' : ''}`;
+      cardEl.onclick = () => socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
+
+      cardEl.innerHTML = `
+        <div class="card-inner">
+          <div class="card-front">🧪</div>
+          <div class="card-back">
+            <div>${carta.contenido}</div>
+            <span class="badge-type">${carta.tipo}</span>
           </div>
+        </div>
+      `;
+      cont.appendChild(cardEl);
+    });
+  }
 
-          <div class="input-group">
-            <label>Código de Sala:</label>
-            <input type="text" id="input-codigo" placeholder="Ej. 123456" maxlength="6" autocomplete="off">
+  function renderizarPuntuaciones(puntuaciones) {
+    const cont = document.getElementById('tabla-puntuaciones');
+    cont.innerHTML = '';
+    Object.values(puntuaciones)
+      .sort((a,b) => b.puntos - a.puntos)
+      .forEach((p, idx) => {
+        cont.innerHTML += `
+          <div class="player-badge" style="border-color:${idx === 0 ? 'gold' : 'var(--accent-neon)'}">
+            <span>${idx + 1}. ${p.nickname}</span>
+            <strong>${p.puntos} pts</strong>
           </div>
+        `;
+      });
+  }
 
-          <button id="btn-unirse" class="btn btn-secondary glow-secondary">⚡ Unirse a la Partida</button>
-        </div>
-      </div>
-      <p id="mensaje-error" class="error-msg"></p>
-    </section>
-
-    <!-- 2. LOBBY Y REGLAS -->
-    <section id="seccion-lobby" class="panel-card hidden">
-      <div class="lobby-header">
-        <h2>SALA DE ESPERA</h2>
-        <div class="room-code-badge">
-          <span>SALA:</span>
-          <strong id="lobby-codigo-display">------</strong>
-        </div>
-      </div>
-
-      <!-- REGLAS FIJAS EN EL LOBBY -->
-      <div class="rules-banner">
-        <h3>📜 REGLAS DEL JUEGO</h3>
-        <ul>
-          <li>🔥 **Tríos Perfectos (+100 PTS):** Junta **Nombre + Símbolo + Valencia** del mismo elemento.</li>
-          <li>⚠️ Si te equivocas en alguna carta del trío, las cartas se voltearán de nuevo en 1.5 segundos.</li>
-        </ul>
-      </div>
-
-      <!-- CONFIGURACIÓN DEL ANFITRIÓN CON FILTRO DE FAMILIAS -->
-      <div id="panel-anfitrion-config" class="config-container hidden">
-        <h3>⚙️ CONFIGURACIÓN Y FAMILIAS DE METALES</h3>
-        
-        <div class="config-grid">
-          <div class="input-group">
-            <label>Nombre del Concurso:</label>
-            <input type="text" id="input-nombre-concurso" value="Torneo Química Pro">
-          </div>
-
-          <div class="input-group">
-            <label>Tiempo (Segundos):</label>
-            <input type="number" id="input-duracion" value="120" min="30" max="600">
-          </div>
-        </div>
-
-        <label class="label-section">Familias de Metales Permitidas en la Partida:</label>
-        <div id="contenedor-familias" class="checkbox-grid">
-          <label><input type="checkbox" value="monovalentes" checked> Monovalentes (+1)</label>
-          <label><input type="checkbox" value="divalentes" checked> Divalentes (+2)</label>
-          <label><input type="checkbox" value="trivalentes" checked> Trivalentes (+3)</label>
-          <label><input type="checkbox" value="variable_1_2" checked> Mono-Divalentes (+1,+2)</label>
-          <label><input type="checkbox" value="variable_2_3" checked> Di-Trivalentes (+2,+3)</label>
-          <label><input type="checkbox" value="polivalentes" checked> Polivalentes (+2,+3,+6...)</label>
-        </div>
-      </div>
-
-      <div class="lobby-content">
-        <h3>JUGADORES CONECTADOS</h3>
-        <ul id="lista-jugadores" class="players-grid"></ul>
-      </div>
-
-      <div id="panel-anfitrion-controles" class="lobby-actions hidden">
-        <button id="btn-iniciar-concurso" class="btn btn-action glow-action">🔥 ¡INICIAR PARTIDA!</button>
-      </div>
-
-      <div id="pantalla-espera-concursante" class="waiting-banner hidden">
-        <div class="spinner"></div>
-        <p>El anfitrión iniciará el concurso en breve...</p>
-      </div>
-    </section>
-
-    <!-- 3. PANTALLA DE JUEGO -->
-    <section id="seccion-juego" class="panel-card hidden">
-      <div class="game-header">
-        <h2 id="juego-titulo-display">CONCURSO DE QUÍMICA</h2>
-        <div class="timer-box">⏱️ TIEMPO: <strong id="cronometro">00:00</strong></div>
-      </div>
-
-      <!-- VISTA SOLO CREADOR (RANKING DESTACADO) -->
-      <div id="vista-anfitrion" class="host-view-panel hidden">
-        <h2 class="ranking-title">🏆 LEADERBOARD EN VIVO 🏆</h2>
-        <div id="ranking-anfitrion-lista" class="ranking-big-list"></div>
-      </div>
-
-      <!-- VISTA SOLO JUGADORES (TABLERO DE 4 COLUMNAS) -->
-      <div id="vista-jugador" class="player-view-panel hidden">
-        <div id="leaderboard-mini" class="leaderboard-bar"></div>
-        <div id="tablero-cartas" class="board-grid-4col"></div>
-      </div>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
+  function iniciarTemporizador(segundos) {
+    let t = segundos;
+    const el = document.getElementById('txt-cronometro');
+    const timer = setInterval(() => {
+      t--;
+      el.innerText = t;
+      if (t <= 0) {
+        clearInterval(timer);
+        alert('¡Tiempo agotado! Revisa las puntuaciones finales.');
+      }
+    }, 1000);
+  }
+</script>
 </body>
 </html>
