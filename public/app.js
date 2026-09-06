@@ -20,13 +20,26 @@ window.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('elements-selector-container');
   if (container) {
     container.innerHTML = categoriesConfig.map(cat => `
-      <label class="element-checkbox-item">
-        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateMaxElementLimit()"> ${cat.label}
-      </label>
+      <div class="element-card-checkbox selected" onclick="toggleCategoryCard(this, '${cat.id}')">
+        <span>${cat.label}</span>
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onclick="event.stopPropagation()">
+      </div>
     `).join('');
     updateMaxElementLimit();
   }
 });
+
+function toggleCategoryCard(cardEl, catId) {
+  const checkbox = cardEl.querySelector('.cat-checkbox');
+  checkbox.checked = !checkbox.checked;
+  
+  if (checkbox.checked) {
+    cardEl.classList.add('selected');
+  } else {
+    cardEl.classList.remove('selected');
+  }
+  updateMaxElementLimit();
+}
 
 function updateMaxElementLimit() {
   const limitInput = document.getElementById('create-limit');
@@ -42,11 +55,6 @@ function updateMaxElementLimit() {
   if (parseInt(limitInput.value) > maxTotal) {
     limitInput.value = maxTotal;
   }
-}
-
-function toggleAllCategories(status) {
-  document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = status);
-  updateMaxElementLimit();
 }
 
 function switchView(viewId) {
