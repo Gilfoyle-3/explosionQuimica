@@ -10,36 +10,51 @@ app.use(express.static('public'));
 
 const rooms = {};
 
+// Base de datos completa clasificada estrictamente por tipo de valencia
 const valenciaDatabase = [
-  // Metales - Valencia Fija
-  { elem: "Litio", sym: "Li", val: "+1", cat: "metales_fija" },
-  { elem: "Sodio", sym: "Na", val: "+1", cat: "metales_fija" },
-  { elem: "Potasio", sym: "K", val: "+1", cat: "metales_fija" },
-  { elem: "Plata", sym: "Ag", val: "+1", cat: "metales_fija" },
-  { elem: "Calcio", sym: "Ca", val: "+2", cat: "metales_fija" },
-  { elem: "Magnesio", sym: "Mg", val: "+2", cat: "metales_fija" },
-  { elem: "Zinc", sym: "Zn", val: "+2", cat: "metales_fija" },
-  { elem: "Aluminio", sym: "Al", val: "+3", cat: "metales_fija" },
+  // --- MONOVALENTES (Valencia 1 / -1) ---
+  { id: "li", elem: "Litio", sym: "Li", val: "+1", cat: "mono" },
+  { id: "na", elem: "Sodio", sym: "Na", val: "+1", cat: "mono" },
+  { id: "k", elem: "Potasio", sym: "K", val: "+1", cat: "mono" },
+  { id: "ag", elem: "Plata", sym: "Ag", val: "+1", cat: "mono" },
+  { id: "f", elem: "Flúor", sym: "F", val: "-1", cat: "mono" },
+  { id: "h", elem: "Hidrógeno", sym: "H", val: "+1", cat: "mono" },
 
-  // Metales - Valencia Variable
-  { elem: "Cobre", sym: "Cu", val: "+1, +2", cat: "metales_variable" },
-  { elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "metales_variable" },
-  { elem: "Oro", sym: "Au", val: "+1, +3", cat: "metales_variable" },
-  { elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "metales_variable" },
-  { elem: "Cobalto", sym: "Co", val: "+2, +3", cat: "metales_variable" },
-  { elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "metales_variable" },
-  { elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "metales_variable" },
-  { elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "metales_variable" },
+  // --- DIVALENTES (Valencia 2 / -2) ---
+  { id: "ca", elem: "Calcio", sym: "Ca", val: "+2", cat: "di" },
+  { id: "mg", elem: "Magnesio", sym: "Mg", val: "+2", cat: "di" },
+  { id: "zn", elem: "Zinc", sym: "Zn", val: "+2", cat: "di" },
+  { id: "ba", elem: "Bario", sym: "Ba", val: "+2", cat: "di" },
+  { id: "be", elem: "Berilio", sym: "Be", val: "+2", cat: "di" },
+  { id: "o", elem: "Oxígeno", sym: "O", val: "-2", cat: "di" },
 
-  // No Metales
-  { elem: "Flúor", sym: "F", val: "-1", cat: "halogenos" },
-  { elem: "Cloro", sym: "Cl", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
-  { elem: "Bromo", sym: "Br", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
-  { elem: "Yodo", sym: "I", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
-  { elem: "Oxígeno", sym: "O", val: "-2", cat: "anfigenos" },
-  { elem: "Azufre", sym: "S", val: "-2, +2, +4, +6", cat: "anfigenos" },
-  { elem: "Nitrógeno", sym: "N", val: "-3, +1, +2, +3, +4, +5", cat: "nitrogenoides" },
-  { elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "carbonoides" }
+  // --- TRIVALENTES (Valencia 3 / -3) ---
+  { id: "al", elem: "Aluminio", sym: "Al", val: "+3", cat: "tri" },
+  { id: "b", elem: "Boro", sym: "B", val: "+3", cat: "tri" },
+  { id: "bi", elem: "Bismuto", sym: "Bi", val: "+3", cat: "tri" },
+  { id: "n", elem: "Nitrógeno", sym: "N", val: "-3, +3, +5", cat: "tri" },
+
+  // --- TETRAVALENTES Y VARIABLE BAJA (Valencia 4) ---
+  { id: "c", elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "tetra" },
+  { id: "si", elem: "Silicio", sym: "Si", val: "+4", cat: "tetra" },
+  { id: "pt", elem: "Platino", sym: "Pt", val: "+2, +4", cat: "tetra" },
+
+  // --- METALES DE VALENCIA VARIABLE (Múltiples Estados) ---
+  { id: "cu", elem: "Cobre", sym: "Cu", val: "+1, +2", cat: "variable" },
+  { id: "hg", elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "variable" },
+  { id: "au", elem: "Oro", sym: "Au", val: "+1, +3", cat: "variable" },
+  { id: "fe", elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "variable" },
+  { id: "co", elem: "Cobalto", sym: "Co", val: "+2, +3", cat: "variable" },
+  { id: "ni", elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "variable" },
+  { id: "pb", elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "variable" },
+  { id: "sn", elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "variable" },
+
+  // --- NO METALES / HALÓGENOS (Penta, Hexa, Hepta) ---
+  { id: "s", elem: "Azufre", sym: "S", val: "-2, +2, +4, +6", cat: "polivalente" },
+  { id: "cl", elem: "Cloro", sym: "Cl", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
+  { id: "br", elem: "Bromo", sym: "Br", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
+  { id: "i", elem: "Yodo", sym: "Y", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
+  { id: "p", elem: "Fósforo", sym: "P", val: "-3, +3, +5", cat: "polivalente" }
 ];
 
 function generateCode() {
@@ -56,13 +71,16 @@ function getSortedPlayers(room) {
 
 io.on('connection', (socket) => {
   
-  socket.on('create_room', ({ title, duration, elementCount, categories }) => {
+  socket.on('create_room', ({ title, duration, selectedCategories }) => {
     const roomCode = generateCode();
+    
+    // Filtra los elementos cuyas categorías hayan sido marcadas por el host
+    const pool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
+    
     rooms[roomCode] = {
       title,
       duration: parseInt(duration) * 60,
-      elementCount: parseInt(elementCount),
-      categories,
+      pool,
       hostId: socket.id,
       started: false,
       players: {},
@@ -75,16 +93,14 @@ io.on('connection', (socket) => {
 
   socket.on('join_room', ({ name, roomCode }) => {
     const room = rooms[roomCode];
-
-    if (!room) return socket.emit('error_message', 'La sala no existe.');
-    if (room.started) return socket.emit('error_message', 'El concurso ya ha iniciado.');
+    if (!room) return socket.emit('error_message', '⚠️ ACCESO DENEGADO: La sala no existe.');
+    if (room.started) return socket.emit('error_message', '⚠️ ACCESO DENEGADO: El desafío ya inició.');
 
     room.players[socket.id] = { name, score: 0 };
     socket.join(roomCode);
 
     socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id });
     
-    // Emitir lista a todos en la sala
     const playerList = getSortedPlayers(room);
     io.to(roomCode).emit('update_player_list', playerList);
     io.to(roomCode).emit('update_leaderboard', playerList);
@@ -95,28 +111,18 @@ io.on('connection', (socket) => {
     if (!room || room.hostId !== socket.id) return;
 
     room.started = true;
-
-    let pool = valenciaDatabase;
-    if (room.categories && !room.categories.includes('todos')) {
-      pool = valenciaDatabase.filter(item => room.categories.includes(item.cat));
-    }
-    if (pool.length < room.elementCount) pool = valenciaDatabase;
-
-    const selected = [...pool].sort(() => 0.5 - Math.random()).slice(0, room.elementCount);
     let deck = [];
 
-    // Tríos
-    selected.forEach((item, index) => {
+    // Generar cartas de Tríos (Nombre, Símbolo, Valencia) con base en el pool seleccionado
+    room.pool.forEach((item, index) => {
       deck.push({ id: `trio_${index}`, text: item.elem, isPower: false });
       deck.push({ id: `trio_${index}`, text: item.sym, isPower: false });
       deck.push({ id: `trio_${index}`, text: item.val, isPower: false });
     });
 
-    // Cartas de poder ocultas en el tablero
-    deck.push({ id: 'power_tornado_1', text: '🌪️ Tornado', isPower: true, powerType: 'tornado' });
-    deck.push({ id: 'power_tornado_2', text: '🌪️ Tornado', isPower: true, powerType: 'tornado' });
-    deck.push({ id: 'power_bomba_1', text: '💣 Bomba', isPower: true, powerType: 'bomba' });
-    deck.push({ id: 'power_bomba_2', text: '💣 Bomba', isPower: true, powerType: 'bomba' });
+    // Añadir cartas de poder cibernéticas
+    deck.push({ id: 'power_tornado_1', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
+    deck.push({ id: 'power_bomba_1', text: '💣 BOMBA 3X3', isPower: true, powerType: 'bomba' });
 
     room.deck = deck.sort(() => 0.5 - Math.random());
 
@@ -162,4 +168,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor iniciado en puerto ${PORT}`));
+server.listen(PORT, () => console.log(`CyberServer Activo en puerto ${PORT}`));
