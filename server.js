@@ -10,7 +10,6 @@ app.use(express.static('public'));
 
 const rooms = {};
 
-// TABLA DE VALENCIAS COMPLETA Y CATEGORIZADA
 const valenciaDatabase = [
   // Metales - Valencia Fija
   { elem: "Litio", sym: "Li", val: "+1", cat: "metales_fija" },
@@ -31,32 +30,28 @@ const valenciaDatabase = [
   { elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "metales_variable" },
   { elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "metales_variable" },
   { elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "metales_variable" },
-  { elem: "Manganeso", sym: "Mn", val: "+2, +3, +4, +6, +7", cat: "metales_variable" },
 
-  // No Metales - Halógenos
+  // No Metales
   { elem: "Flúor", sym: "F", val: "-1", cat: "halogenos" },
   { elem: "Cloro", sym: "Cl", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
   { elem: "Bromo", sym: "Br", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
   { elem: "Yodo", sym: "I", val: "-1, +1, +3, +5, +7", cat: "halogenos" },
-
-  // No Metales - Anfígenos
   { elem: "Oxígeno", sym: "O", val: "-2", cat: "anfigenos" },
   { elem: "Azufre", sym: "S", val: "-2, +2, +4, +6", cat: "anfigenos" },
-  { elem: "Selenio", sym: "Se", val: "-2, +2, +4, +6", cat: "anfigenos" },
-  { elem: "Telurio", sym: "Te", val: "-2, +2, +4, +6", cat: "anfigenos" },
-
-  // No Metales - Nitrogenoides
   { elem: "Nitrógeno", sym: "N", val: "-3, +1, +2, +3, +4, +5", cat: "nitrogenoides" },
-  { elem: "Fósforo", sym: "P", val: "-3, +3, +5", cat: "nitrogenoides" },
-  { elem: "Arsénico", sym: "As", val: "-3, +3, +5", cat: "nitrogenoides" },
-
-  // No Metales - Carbonoides
-  { elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "carbonoides" },
-  { elem: "Silicio", sym: "Si", val: "-4, +4", cat: "carbonoides" }
+  { elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "carbonoides" }
 ];
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function getSortedPlayers(room) {
+  return Object.entries(room.players).map(([id, p]) => ({
+    id,
+    name: p.name,
+    score: p.score
+  })).sort((a, b) => b.score - a.score);
 }
 
 io.on('connection', (socket) => {
@@ -67,7 +62,7 @@ io.on('connection', (socket) => {
       title,
       duration: parseInt(duration) * 60,
       elementCount: parseInt(elementCount),
-      categories, // Array con las familias seleccionadas
+      categories,
       hostId: socket.id,
       started: false,
       players: {},
@@ -87,8 +82,12 @@ io.on('connection', (socket) => {
     room.players[socket.id] = { name, score: 0 };
     socket.join(roomCode);
 
-    socket.emit('joined_waiting_room', { title: room.title, name });
-    io.to(roomCode).emit('update_player_list', Object.values(room.players));
+    socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id });
+    
+    // Emitir lista a todos en la sala
+    const playerList = getSortedPlayers(room);
+    io.to(roomCode).emit('update_player_list', playerList);
+    io.to(roomCode).emit('update_leaderboard', playerList);
   });
 
   socket.on('start_game', (roomCode) => {
@@ -97,34 +96,28 @@ io.on('connection', (socket) => {
 
     room.started = true;
 
-    // Filtrar elementos según el array de familias seleccionadas
     let pool = valenciaDatabase;
     if (room.categories && !room.categories.includes('todos')) {
       pool = valenciaDatabase.filter(item => room.categories.includes(item.cat));
     }
-
-    // Si la selección dio muy pocos elementos, usar toda la base para evitar fallos
-    if (pool.length < room.elementCount) {
-      pool = valenciaDatabase;
-    }
+    if (pool.length < room.elementCount) pool = valenciaDatabase;
 
     const selected = [...pool].sort(() => 0.5 - Math.random()).slice(0, room.elementCount);
     let deck = [];
 
-    // Agregar Tríos de cartas
+    // Tríos
     selected.forEach((item, index) => {
       deck.push({ id: `trio_${index}`, text: item.elem, isPower: false });
       deck.push({ id: `trio_${index}`, text: item.sym, isPower: false });
       deck.push({ id: `trio_${index}`, text: item.val, isPower: false });
     });
 
-    // Agregar cartas de poder mezcladas en el tablero (2 Tornados, 2 Bombas)
+    // Cartas de poder ocultas en el tablero
     deck.push({ id: 'power_tornado_1', text: '🌪️ Tornado', isPower: true, powerType: 'tornado' });
     deck.push({ id: 'power_tornado_2', text: '🌪️ Tornado', isPower: true, powerType: 'tornado' });
     deck.push({ id: 'power_bomba_1', text: '💣 Bomba', isPower: true, powerType: 'bomba' });
     deck.push({ id: 'power_bomba_2', text: '💣 Bomba', isPower: true, powerType: 'bomba' });
 
-    // Mezclar el mazo completo
     room.deck = deck.sort(() => 0.5 - Math.random());
 
     io.to(roomCode).emit('game_started', {
@@ -139,7 +132,7 @@ io.on('connection', (socket) => {
 
       if (timer <= 0) {
         clearInterval(interval);
-        io.to(roomCode).emit('game_over', Object.values(room.players));
+        io.to(roomCode).emit('game_over', getSortedPlayers(room));
       }
     }, 1000);
   });
@@ -148,7 +141,7 @@ io.on('connection', (socket) => {
     const room = rooms[roomCode];
     if (room && room.players[socket.id]) {
       room.players[socket.id].score += points;
-      io.to(roomCode).emit('update_leaderboard', Object.values(room.players).sort((a,b) => b.score - a.score));
+      io.to(roomCode).emit('update_leaderboard', getSortedPlayers(room));
     }
   });
 
@@ -160,8 +153,9 @@ io.on('connection', (socket) => {
     for (const code in rooms) {
       if (rooms[code].players[socket.id]) {
         delete rooms[code].players[socket.id];
-        io.to(code).emit('update_player_list', Object.values(rooms[code].players));
-        io.to(code).emit('update_leaderboard', Object.values(rooms[code].players).sort((a,b) => b.score - a.score));
+        const playerList = getSortedPlayers(rooms[code]);
+        io.to(code).emit('update_player_list', playerList);
+        io.to(code).emit('update_leaderboard', playerList);
       }
     }
   });
