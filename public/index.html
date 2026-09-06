@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYBER_CHEM // EXPLOSIÓN QUÍMICA v2.07</title>
+  
+  <!-- Fuentes Futuristas -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Estilos CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- EFECTOS VISUALES CYBERPUNK -->
+  <div class="scanline"></div>
+  <div class="overlay-grid"></div>
+
+  <div class="cyber-container">
+    
+    <!-- HEADER CON BANNER / LOGO -->
+    <header class="hud-header">
+      <h1 class="glitch" data-text="CYBER_CHEM">CYBER_CHEM</h1>
+      <p class="subtitle">> EXPLOSIÓN QUÍMICA // FULL_VALENCE_DATABASE</p>
+    </header>
+
+    <!-- PÁGINA PRINCIPAL / MENÚ -->
+    <section id="pantalla-inicio" class="seccion activa">
+      <div class="hud-controls vertical">
+        <button class="cyber-btn primary" onclick="mostrarSeccion('pantalla-crear')">⚗️ CREAR CONCURSO (HOST)</button>
+        <button class="cyber-btn warning" onclick="mostrarSeccion('pantalla-ingresar')">🧪 INGRESAR A UN CONCURSO</button>
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-reglas')">📜 REGLAS DEL JUEGO</button>
+      </div>
+    </section>
+
+    <!-- CREAR CONCURSO (HOST) -->
+    <section id="pantalla-crear" class="seccion">
+      <h2 class="cyber-title">CONFIGURAR NUEVA SALA</h2>
+      
+      <div class="form-group">
+        <label class="cyber-label">NOMBRE DEL CONCURSO</label>
+        <input type="text" id="nombreConcurso" class="cyber-input" placeholder="Ej: Torneo Nacional de Química">
+      </div>
+      
+      <div class="form-group">
+        <label class="cyber-label">TIEMPO DE PARTIDA (SEGUNDOS)</label>
+        <input type="number" id="tiempoConcurso" class="cyber-input" value="60">
+      </div>
+
+      <div class="hud-controls">
+        <button class="cyber-btn primary" onclick="crearConcurso()">GENERAR SALA</button>
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">CANCELAR</button>
+      </div>
+    </section>
+
+    <!-- INGRESAR A UN CONCURSO (JUGADOR) -->
+    <section id="pantalla-ingresar" class="seccion">
+      <h2 class="cyber-title">CONECTAR A SALA</h2>
+      
+      <div class="form-group">
+        <label class="cyber-label">TU ALIAS / JUGADOR</label>
+        <input type="text" id="nombreJugador" class="cyber-input" placeholder="Ej: MarieCurie_99">
+      </div>
+      
+      <div class="form-group">
+        <label class="cyber-label">CÓDIGO DE ACCESO</label>
+        <input type="text" id="codigoIngreso" class="cyber-input" placeholder="Ej: 4021" maxlength="6">
+      </div>
+
+      <div class="hud-controls">
+        <button class="cyber-btn warning" onclick="unirseConcurso()">UNIRSE AL JUEGO</button>
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">VOLVER</button>
+      </div>
+    </section>
+
+    <!-- REGLAS DEL JUEGO -->
+    <section id="pantalla-reglas" class="seccion">
+      <h2 class="cyber-title">PROTOCOLO DE JUEGO</h2>
+      <div class="reglas-texto">
+        <p>1. <b>FORMACIÓN DE PAREJAS:</b> Encuentra la combinación exacta de Elemento y Valencia.</p>
+        <p>2. ⚡ <b>SISTEMA DE VICTORIA:</b> Acumula el mayor puntaje antes de que termine el temporizador.</p>
+      </div>
+      <div class="hud-controls">
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">ENTENDIDO</button>
+      </div>
+    </section>
+
+    <!-- SALA DE ESPERA (HOST) -->
+    <section id="pantalla-sala-host" class="seccion">
+      <h2 class="cyber-title">CÓDIGO DE SALA: <span id="codigo-display" class="neon-cyan">------</span></h2>
+      <p class="subtitle">ESPERANDO JUGADORES EN LÍNEA...</p>
+      
+      <div class="player-list-container">
+        <ul id="lista-jugadores-host" class="cyber-list"></ul>
+      </div>
+
+      <div class="hud-controls">
+        <button class="cyber-btn primary" onclick="iniciarConcurso()">¡INICIAR CONCURSO!</button>
+        <button class="cyber-btn warning" onclick="verRanking()">VER RANKING</button>
+      </div>
+    </section>
+
+    <!-- PANTALLA DE JUEGO (JUGADOR) -->
+    <section id="pantalla-juego" class="seccion">
+      <div class="hud-stats">
+        <div class="stat-box">
+          <span class="label">TIEMPO</span>
+          <span id="cronometro-jugador" class="value neon-cyan">60s</span>
+        </div>
+        <div class="stat-box">
+          <span class="label">PUNTAJE</span>
+          <span id="mis-puntos" class="value neon-green">0</span>
+        </div>
+      </div>
+
+      <main class="grid-cartas" id="tablero"></main>
+    </section>
+
+    <!-- PANTALLA DE RANKING (HOST/JUGADOR) -->
+    <section id="pantalla-ranking" class="seccion">
+      <h2 class="cyber-title">RANKING EN TIEMPO REAL</h2>
+      <h3 class="subtitle">TIEMPO RESTANTE: <span id="cronometro-host" class="neon-pink">60</span>s</h3>
+      
+      <div class="table-container">
+        <table class="cyber-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>JUGADOR</th>
+              <th>PUNTOS</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-ranking"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- LIBRERÍAS Y CLIENTE JAVASCRIPT -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
