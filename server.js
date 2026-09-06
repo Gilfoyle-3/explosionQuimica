@@ -122,7 +122,7 @@ io.on('connection', (socket) => {
     sala.puntuaciones[socket.id] = { nickname: nickname.trim(), puntos: 0 };
 
     socket.join(codigoSala);
-    socket.emit('unido_exitosamente', { codigoSala, configuracion: sala.configuracion });
+    socket.emit('unido_exitosamente', { codigoSala });
     io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
   });
 
