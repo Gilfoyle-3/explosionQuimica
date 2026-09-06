@@ -1,464 +1,216 @@
 const socket = io();
 
-// AUDIO SINTETIZADO CON WEB AUDIO API
-const AudioFX = {
-  ctx: null,
-  init() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-  },
-  playFlip() {
-    try {
-      this.init();
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(this.ctx.currentTime + 0.08);
-    } catch (e) {}
-  },
-  playMatch() {
-    try {
-      this.init();
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.1);
-      osc.frequency.setValueAtTime(783.99, now + 0.2);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(now + 0.35);
-    } catch (e) {}
-  },
-  playBomb() {
-    try {
-      this.init();
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start();
-      osc.stop(now + 0.4);
-    } catch (e) {}
+// ==========================================
+// REFERENCIAS AL DOM
+// ==========================================
+const seccionLogin = document.getElementById('seccion-login');
+const seccionLobby = document.getElementById('seccion-lobby');
+const seccionJuego = document.getElementById('seccion-juego');
+
+// Controles Login / Creación
+const btnCrearSala = document.getElementById('btn-crear-sala');
+const numElementosSelect = document.getElementById('num-elementos');
+const btnUnirse = document.getElementById('btn-unirse');
+const inputNickname = document.getElementById('input-nickname');
+const inputCodigo = document.getElementById('input-codigo');
+const mensajeError = document.getElementById('mensaje-error');
+
+// Controles Lobby (Sala de Espera)
+const lobbyCodigoDisplay = document.getElementById('lobby-codigo-display');
+const listaJugadores = document.getElementById('lista-jugadores');
+const panelAnfitrionControles = document.getElementById('panel-anfitrion-controles');
+const esperandoMensaje = document.getElementById('esperando-mensaje');
+const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
+
+// Controles Juego
+const juegoCodigoDisplay = document.getElementById('juego-codigo-display');
+const leaderboard = document.getElementById('leaderboard');
+const tableroCartas = document.getElementById('tablero-cartas');
+
+// Estado local
+let miCodigoSala = null;
+let esAnfitrion = false;
+let cartasSeleccionadas = [];
+let bloqueado = false;
+
+// ==========================================
+// 1. CREAR SALA (ANFITRIÓN)
+// ==========================================
+btnCrearSala.addEventListener('click', () => {
+  const numElementos = numElementosSelect.value;
+  socket.emit('crear_sala', { numElementos });
+});
+
+socket.on('sala_creada', ({ codigoSala, numElementos }) => {
+  miCodigoSala = codigoSala;
+  esAnfitrion = true;
+
+  lobbyCodigoDisplay.textContent = codigoSala;
+  seccionLogin.classList.add('hidden');
+  seccionLobby.classList.remove('hidden');
+
+  panelAnfitrionControles.classList.remove('hidden');
+  esperandoMensaje.classList.add('hidden');
+  mensajeError.textContent = '';
+});
+
+// ==========================================
+// 2. UNIRSE A SALA (CONCURSANTE)
+// ==========================================
+btnUnirse.addEventListener('click', () => {
+  const nickname = inputNickname.value.trim();
+  const codigoSala = inputCodigo.value.trim();
+
+  if (!nickname || !codigoSala) {
+    mensajeError.textContent = 'Por favor ingresa tu apodo y el código de la sala.';
+    return;
   }
-};
 
-// BASE DE DATOS EXTENSA Y DETALLADA POR CATEGORÍAS
-const ELEMENT_DATABASE = [
-  // --- METALES VALENCIA FIJA ---
-  { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
-  { cat: 'mono_fixed', name: 'Litio', symbol: 'Li', val: '+1' },
-  { cat: 'mono_fixed', name: 'Sodio', symbol: 'Na', val: '+1' },
-  { cat: 'mono_fixed', name: 'Potasio', symbol: 'K', val: '+1' },
-  { cat: 'mono_fixed', name: 'Rubidio', symbol: 'Rb', val: '+1' },
-  { cat: 'mono_fixed', name: 'Cesio', symbol: 'Cs', val: '+1' },
-  { cat: 'mono_fixed', name: 'Francio', symbol: 'Fr', val: '+1' },
-  { cat: 'mono_fixed', name: 'Plata', symbol: 'Ag', val: '+1' },
-  { cat: 'mono_fixed', name: 'Amonio', symbol: 'NH4', val: '+1' },
+  socket.emit('unirse_sala', { codigoSala, nickname });
+});
 
-  { cat: 'di_fixed', name: 'Berilio', symbol: 'Be', val: '+2' },
-  { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
-  { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
-  { cat: 'di_fixed', name: 'Estroncio', symbol: 'Sr', val: '+2' },
-  { cat: 'di_fixed', name: 'Bario', symbol: 'Ba', val: '+2' },
-  { cat: 'di_fixed', name: 'Radio', symbol: 'Ra', val: '+2' },
-  { cat: 'di_fixed', name: 'Zinc', symbol: 'Zn', val: '+2' },
-  { cat: 'di_fixed', name: 'Cadmio', symbol: 'Cd', val: '+2' },
+socket.on('unido_exitosamente', ({ codigoSala, nickname }) => {
+  miCodigoSala = codigoSala;
+  esAnfitrion = false;
 
-  { cat: 'tri_fixed', name: 'Aluminio', symbol: 'Al', val: '+3' },
-  { cat: 'tri_fixed', name: 'Galio', symbol: 'Ga', val: '+3' },
-  { cat: 'tri_fixed', name: 'Indio', symbol: 'In', val: '+3' },
-  { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
+  lobbyCodigoDisplay.textContent = codigoSala;
+  seccionLogin.classList.add('hidden');
+  seccionLobby.classList.remove('hidden');
 
-  { cat: 'poly_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
-  { cat: 'poly_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
-  { cat: 'poly_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
-  { cat: 'poly_fixed', name: 'Wolframio', symbol: 'W', val: '+6' },
+  panelAnfitrionControles.classList.add('hidden');
+  esperandoMensaje.classList.remove('hidden');
+  mensajeError.textContent = '';
+});
 
-  // --- METALES VALENCIA VARIABLE ---
-  { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
-  { cat: 'variable', name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
-  { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
-  { cat: 'variable', name: 'Talio', symbol: 'Tl', val: '+1, +3' },
-  { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
-  { cat: 'variable', name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
-  { cat: 'variable', name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
-  { cat: 'variable', name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
-  { cat: 'variable', name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
-  { cat: 'variable', name: 'Platino', symbol: 'Pt', val: '+2, +4' },
-  { cat: 'variable', name: 'Cerio', symbol: 'Ce', val: '+3, +4' },
-  { cat: 'variable', name: 'Vanadio', symbol: 'V', val: '+3, +5' },
+socket.on('error_login', (msg) => {
+  mensajeError.textContent = msg;
+});
 
-  // --- NO METALES ---
-  { cat: 'nometal', name: 'Flúor', symbol: 'F', val: '-1' },
-  { cat: 'nometal', name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Bromo', symbol: 'Br', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' },
-  { cat: 'nometal', name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Selenio', symbol: 'Se', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Teluro', symbol: 'Te', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
-  { cat: 'nometal', name: 'Fósforo', symbol: 'P', val: '-3, +3, +5' },
-  { cat: 'nometal', name: 'Arsénico', symbol: 'As', val: '-3, +3, +5' },
-  { cat: 'nometal', name: 'Antimonio', symbol: 'Sb', val: '-3, +3, +5' },
-  { cat: 'nometal', name: 'Boro', symbol: 'B', val: '-3, +3' },
-  { cat: 'nometal', name: 'Carbono', symbol: 'C', val: '-4, +2, +4' },
-  { cat: 'nometal', name: 'Silicio', symbol: 'Si', val: '-4, +4' },
-  { cat: 'nometal', name: 'Germanio', symbol: 'Ge', val: '-4, +4' }
-];
+// ==========================================
+// 3. ACTUALIZAR SALA DE ESPERA (LOBBY)
+// ==========================================
+socket.on('actualizar_lista_espera', ({ jugadores }) => {
+  listaJugadores.innerHTML = '';
+  jugadores.forEach((j) => {
+    const li = document.createElement('li');
+    li.textContent = `🎮 ${j.nickname}`;
+    listaJugadores.appendChild(li);
+  });
+});
 
-let salaActual = null;
-let miPuntaje = 0;
-let flippedCards = [];
-let esHost = false;
-let currentDeck = [];
+// ==========================================
+// 4. INICIAR CONCURSO
+// ==========================================
+btnIniciarConcurso.addEventListener('click', () => {
+  if (miCodigoSala && esAnfitrion) {
+    socket.emit('iniciar_concurso', { codigoSala: miCodigoSala });
+  }
+});
 
-function mostrarSeccion(idSeccion) {
-  document.querySelectorAll('.seccion').forEach(sec => sec.classList.remove('activa'));
-  const target = document.getElementById(idSeccion);
-  if (target) target.classList.add('activa');
-}
+socket.on('concurso_iniciado', ({ tablero, puntuaciones }) => {
+  seccionLobby.classList.add('hidden');
+  seccionJuego.classList.remove('hidden');
+  juegoCodigoDisplay.textContent = miCodigoSala;
 
-function extractNumbers(str) {
-  const matches = str.match(/\d+/g);
-  return matches ? matches : [];
-}
+  renderizarTablero(tablero);
+  actualizarLeaderboard(puntuaciones);
+});
 
-function crearConcurso() {
-  const nombre = document.getElementById('nombreConcurso').value || 'Torneo Química';
-  const tiempo = document.getElementById('tiempoConcurso').value || 60;
+socket.on('error_inicio', (msg) => {
+  alert(msg);
+});
+
+// ==========================================
+// 5. LÓGICA DEL TABLERO Y JUEGO
+// ==========================================
+
+// Renderiza todas las cartas en el grid
+function renderizarTablero(cartas) {
+  tableroCartas.innerHTML = '';
   
-  const checkboxes = document.querySelectorAll('.checkbox-group input[type="checkbox"]:checked');
-  const selectedCategories = Array.from(checkboxes).map(cb => cb.value);
-
-  if (selectedCategories.length === 0) {
-    alert('Debes seleccionar al menos una categoría de la tabla.');
-    return;
-  }
-
-  // Filtrado flexible por categorías específicas
-  const elementosFiltrados = ELEMENT_DATABASE.filter(elem => selectedCategories.includes(elem.cat));
-
-  if (elementosFiltrados.length === 0) {
-    alert('No hay elementos para la combinación seleccionada.');
-    return;
-  }
-
-  esHost = true;
-  window.elementosPartida = elementosFiltrados;
-  socket.emit('createRoom', { nombre, tiempo });
-}
-
-function unirseConcurso() {
-  const alias = document.getElementById('nombreJugador').value;
-  const codigo = document.getElementById('codigoIngreso').value;
-
-  if (!alias || !codigo) {
-    alert('Ingresa tu alias y el código de sala.');
-    return;
-  }
-  esHost = false;
-  salaActual = codigo;
-  socket.emit('joinRoom', { roomId: codigo, playerName: alias });
-}
-
-function iniciarConcurso() {
-  if (salaActual) {
-    const elementosEnviar = window.elementosPartida || ELEMENT_DATABASE;
-    socket.emit('startGameHost', { roomId: salaActual, elements: elementosEnviar });
-  }
-}
-
-// SOCKET LISTENERS
-socket.on('roomCreated', ({ roomId }) => {
-  salaActual = roomId;
-  document.getElementById('codigo-display').innerText = roomId;
-  mostrarSeccion('pantalla-sala-host');
-});
-
-socket.on('playerJoined', ({ players }) => {
-  const lista = document.getElementById('lista-jugadores-host');
-  if (lista) {
-    lista.innerHTML = players.map(p => `
-      <div style="background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; font-weight:800; border:1px solid rgba(255,255,255,0.1); font-size:0.9rem;">
-        👤 ${p.name}
-      </div>
-    `).join('');
-  }
-  actualizarTablaRanking(players);
-});
-
-socket.on('gameStart', ({ deck, tiempo }) => {
-  miPuntaje = 0;
-  currentDeck = deck;
-  document.getElementById('mis-puntos').innerText = '0';
-  document.getElementById('cronometro-jugador').innerText = `${tiempo}s`;
-  document.getElementById('cronometro-host').innerText = `${tiempo}`;
-
-  if (esHost) {
-    mostrarSeccion('pantalla-ranking');
-  } else {
-    renderBoard(currentDeck);
-    mostrarSeccion('pantalla-juego');
-  }
-});
-
-socket.on('timerUpdate', ({ tiempoRestante }) => {
-  document.getElementById('cronometro-jugador').innerText = `${tiempoRestante}s`;
-  document.getElementById('cronometro-host').innerText = `${tiempoRestante}`;
-});
-
-socket.on('rankingUpdate', ({ players }) => actualizarTablaRanking(players));
-
-socket.on('gameOver', ({ players }) => {
-  actualizarTablaRanking(players);
-  document.getElementById('titulo-ranking').innerText = "🏆 RESULTADOS FINALES 🏆";
-  mostrarSeccion('pantalla-ranking');
-});
-
-socket.on('errorMsg', (msg) => alert(msg));
-
-// RENDERIZADO DEL TABLERO
-function renderBoard(deck) {
-  const boardEl = document.getElementById('tablero');
-  boardEl.innerHTML = '';
-
-  deck.forEach((cardData, idx) => {
+  cartas.forEach((carta) => {
     const cardEl = document.createElement('div');
-    cardEl.classList.add('card');
-    cardEl.dataset.index = idx;
-    
-    if (cardData.matched) {
-      if (cardData.type === 'power_bomb' || cardData.type === 'power_tornado') {
-        cardEl.classList.add('power-used');
-      } else {
-        cardEl.classList.add('matched');
-      }
-    }
+    cardEl.className = 'carta';
+    if (carta.revelada) cardEl.classList.add('revelada');
+    if (carta.emparejada) cardEl.classList.add('emparejada');
 
-    cardEl.innerHTML = `
-      <div class="symbol">?</div>
-      <div class="type-tag">TOCAR</div>
-    `;
+    cardEl.dataset.id = carta.id;
 
-    cardEl.addEventListener('click', () => handleCardClick(cardEl, cardData, idx));
-    boardEl.appendChild(cardEl);
-  });
-}
-
-function handleCardClick(cardEl, cardData, idx) {
-  if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched') || cardEl.classList.contains('power-used') || flippedCards.length >= 3) return;
-
-  AudioFX.playFlip();
-
-  if (cardData.type === 'power_bomb') {
-    activarBomba(cardEl, idx);
-    return;
-  }
-
-  if (cardData.type === 'power_tornado') {
-    activarTornado(cardEl, idx);
-    return;
-  }
-
-  cardEl.classList.add('flipped');
-  
-  let tagTexto = 'CARTA';
-  let textoMostrado = cardData.content;
-
-  if (cardData.type === 'symbol') tagTexto = 'SÍMBOLO';
-  if (cardData.type === 'name') tagTexto = 'NOMBRE';
-  if (cardData.type === 'valence') {
-    tagTexto = 'VALENCIA';
-    textoMostrado = cardData.content; // MUESTRA SÓLO NÚMEROS Y SIGNOS
-  }
-
-  cardEl.querySelector('.symbol').innerText = textoMostrado;
-  cardEl.querySelector('.type-tag').innerText = tagTexto;
-
-  flippedCards.push({ element: cardEl, data: cardData });
-
-  if (flippedCards.length === 3) {
-    checkTrioMatch();
-  }
-}
-
-function checkTrioMatch() {
-  const [c1, c2, c3] = flippedCards;
-
-  const types = [c1.data.type, c2.data.type, c3.data.type];
-  const hasSymbol = types.includes('symbol');
-  const hasName = types.includes('name');
-  const hasValence = types.includes('valence');
-
-  let isMatch = false;
-
-  if (hasSymbol && hasName && hasValence) {
-    const symbolCard = flippedCards.find(c => c.data.type === 'symbol');
-    const nameCard = flippedCards.find(c => c.data.type === 'name');
-    const valenceCard = flippedCards.find(c => c.data.type === 'valence');
-
-    if (symbolCard.data.idElem === nameCard.data.idElem) {
-      const elementValenceNumbers = extractNumbers(symbolCard.data.valences);
-      const selectedValenceNumbers = extractNumbers(valenceCard.data.content);
-
-      if (selectedValenceNumbers.some(num => elementValenceNumbers.includes(num))) {
-        isMatch = true;
-      }
-    }
-  }
-
-  if (isMatch) {
-    AudioFX.playMatch();
-    setTimeout(() => {
-      flippedCards.forEach(c => {
-        c.element.classList.add('matched');
-        c.data.matched = true;
-      });
-
-      miPuntaje += 100;
-      document.getElementById('mis-puntos').innerText = miPuntaje;
-
-      if (salaActual) {
-        socket.emit('updateScore', { roomId: salaActual, points: miPuntaje });
-      }
-
-      flippedCards = [];
-    }, 300);
-  } else {
-    setTimeout(() => {
-      flippedCards.forEach(c => {
-        c.element.classList.remove('flipped');
-        c.element.querySelector('.symbol').innerText = '?';
-        c.element.querySelector('.type-tag').innerText = 'TOCAR';
-      });
-      flippedCards = [];
-    }, 800);
-  }
-}
-
-function activarBomba(cardEl, index) {
-  AudioFX.playBomb();
-  
-  cardEl.classList.add('flipped');
-  cardEl.querySelector('.symbol').innerText = '💣';
-  cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
-
-  const allCards = document.querySelectorAll('.card');
-  const cols = 5;
-
-  const radioIndexes = [
-    index - 1, index + 1,
-    index - cols, index - cols - 1, index - cols + 1,
-    index + cols, index + cols - 1, index + cols + 1
-  ];
-
-  radioIndexes.forEach(i => {
-    if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
-      const data = currentDeck[i];
-      if (data) {
-        allCards[i].classList.add('flipped');
-        allCards[i].querySelector('.symbol').innerText = data.content;
-        allCards[i].querySelector('.type-tag').innerText = data.type.toUpperCase();
-      }
-    }
-  });
-
-  setTimeout(() => {
-    cardEl.classList.add('power-used');
-    currentDeck[index].matched = true;
-
-    radioIndexes.forEach(i => {
-      if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
-        allCards[i].classList.remove('flipped');
-        allCards[i].querySelector('.symbol').innerText = '?';
-        allCards[i].querySelector('.type-tag').innerText = 'TOCAR';
-      }
-    });
-  }, 1500);
-}
-
-function activarTornado(cardEl, index) {
-  AudioFX.playBomb();
-
-  cardEl.classList.add('flipped');
-  cardEl.querySelector('.symbol').innerText = '🌪️';
-  cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
-
-  setTimeout(() => {
-    cardEl.classList.add('power-used');
-    currentDeck[index].matched = true;
-
-    flippedCards.forEach(c => {
-      c.element.classList.remove('flipped');
-      c.element.querySelector('.symbol').innerText = '?';
-      c.element.querySelector('.type-tag').innerText = 'TOCAR';
-    });
-    flippedCards = [];
-
-    const unmatched = currentDeck.filter(c => !c.matched);
-    unmatched.sort(() => Math.random() - 0.5);
-
-    let umIdx = 0;
-    for (let i = 0; i < currentDeck.length; i++) {
-      if (!currentDeck[i].matched) {
-        currentDeck[i] = unmatched[umIdx++];
-      }
-    }
-    renderBoard(currentDeck);
-  }, 1500);
-}
-
-function actualizarTablaRanking(players) {
-  const container = document.getElementById('tabla-ranking');
-  if (!container) return;
-
-  container.className = 'ranking-list';
-  container.innerHTML = players.map((p, index) => {
-    const pos = index + 1;
-    let topClass = '';
-    let medal = `#${pos}`;
-
-    if (pos === 1) { topClass = 'top-1'; medal = '🥇'; }
-    else if (pos === 2) { topClass = 'top-2'; medal = '🥈'; }
-    else if (pos === 3) { topClass = 'top-3'; medal = '🥉'; }
-
-    return `
-      <div class="ranking-card ${topClass}">
-        <div class="rank-left">
-          <div class="rank-badge">${medal}</div>
-          <div>
-            <div class="rank-name">${p.name}</div>
-            <div class="rank-sub">PUESTO ${pos}</div>
-          </div>
+    // Visualización del contenido
+    if (carta.revelada || carta.emparejada) {
+      cardEl.innerHTML = `
+        <div class="contenido-carta ${carta.tipo}">
+          <span class="tipo-tag">${carta.tipo.toUpperCase()}</span>
+          <span class="texto-principal">${carta.contenido}</span>
         </div>
-        <div class="rank-score-pill">${p.points} PTS</div>
-      </div>
-    `;
-  }).join('');
+      `;
+    } else {
+      cardEl.innerHTML = `<div class="reverso">❓</div>`;
+    }
+
+    // Evento de clic en la carta
+    cardEl.addEventListener('click', () => {
+      if (bloqueado || carta.revelada || carta.emparejada) return;
+      socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
+    });
+
+    tableroCartas.appendChild(cardEl);
+  });
 }
 
-// EXPOSICIÓN GLOBAL
-window.crearConcurso = crearConcurso;
-window.unirseConcurso = unirseConcurso;
-window.iniciarConcurso = iniciarConcurso;
-window.mostrarSeccion = mostrarSeccion;
+// Escuchar actualizaciones del servidor sobre las cartas
+socket.on('actualizar_tablero', ({ tablero, seleccionadas, estadoJugada }) => {
+  renderizarTablero(tablero);
+
+  if (estadoJugada === 'evaluando') {
+    bloqueado = true;
+  } else if (estadoJugada === 'exito') {
+    bloqueado = false;
+    cartasSeleccionadas = [];
+  } else if (estadoJugada === 'fallo') {
+    bloqueado = true;
+    setTimeout(() => {
+      bloqueado = false;
+      cartasSeleccionadas = [];
+      socket.emit('ocultar_no_coincidentes', { codigoSala: miCodigoSala });
+    }, 1500);
+  } else {
+    bloqueado = false;
+  }
+});
+
+// Escuchar eventos especiales (Poderes: Bomba y Tornado)
+socket.on('efecto_poder', ({ tipoPoder, mensaje }) => {
+  const alerta = document.createElement('div');
+  alerta.className = `alerta-poder ${tipoPoder}`;
+  alerta.textContent = mensaje;
+  document.body.appendChild(alerta);
+
+  setTimeout(() => {
+    alerta.remove();
+  }, 3000);
+});
+
+// Actualización del Ranking en tiempo real
+socket.on('actualizar_puntuaciones', ({ puntuaciones }) => {
+  actualizarLeaderboard(puntuaciones);
+});
+
+function actualizarLeaderboard(puntuaciones) {
+  leaderboard.innerHTML = '<strong>Clasificación:</strong> ';
+  
+  // Ordenar jugadores por puntos descendentes
+  const listaOrdenada = Object.values(puntuaciones).sort((a, b) => b.puntos - a.puntos);
+
+  listaOrdenada.forEach((p, idx) => {
+    const item = document.createElement('span');
+    item.className = 'jugador-score';
+    item.textContent = `#${idx + 1} ${p.nickname}: ${p.puntos} pts | `;
+    leaderboard.appendChild(item);
+  });
+}
+
+// Escuchar fin del juego
+socket.on('fin_juego', ({ ganador, puntuaciones }) => {
+  alert(`🏆 ¡FIN DEL CONCURSO! 🏆\nEl ganador es: ${ganador.nickname} con ${ganador.puntos} puntos.`);
+});
