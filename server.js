@@ -10,7 +10,6 @@ app.use(express.static('public'));
 
 const rooms = {};
 
-// Base de datos exacta basada en tu tabla de metales
 const valenciaDatabase = [
   // --- MONOVALENTES (+1) ---
   { id: "li", elem: "Litio", sym: "Li", val: "+1", cat: "mono" },
@@ -99,13 +98,15 @@ function getSortedPlayers(room) {
 
 io.on('connection', (socket) => {
   
-  socket.on('create_room', ({ title, duration, selectedCategories, elementLimit }) => {
+  socket.on('create_room', ({ title, duration, selectedCategories }) => {
     const roomCode = generateCode();
     
+    // Filtra por las categorías seleccionadas y baraja
     let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
     filteredPool.sort(() => 0.5 - Math.random());
 
-    const pool = filteredPool.slice(0, parseInt(elementLimit));
+    // Selecciona exactamente un rango de 16 elementos (o menos si el total elegido es menor)
+    const pool = filteredPool.slice(0, 16);
     
     rooms[roomCode] = {
       title,
