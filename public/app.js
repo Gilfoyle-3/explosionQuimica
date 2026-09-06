@@ -6,14 +6,13 @@ let myScore = 0;
 let flippedCards = [];
 let isProcessing = false;
 
-// Categorías disponibles para selección múltiple
 const categoriesConfig = [
   { id: "mono", label: "🟢 Monovalentes (Val. 1 / -1)" },
   { id: "di", label: "🔵 Divalentes (Val. 2 / -2)" },
   { id: "tri", label: "🟣 Trivalentes (Val. 3 / -3)" },
   { id: "tetra", label: "🟡 Tetravalentes (Val. 4)" },
   { id: "variable", label: "🟠 Metales Valencia Variable" },
-  { id: "polivalente", label: "🔴 No Metales Polivalentes (Halógenos/Azufre)" }
+  { id: "polivalente", label: "🔴 No Metales Polivalentes" }
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -21,14 +20,28 @@ window.addEventListener('DOMContentLoaded', () => {
   if (container) {
     container.innerHTML = categoriesConfig.map(cat => `
       <label class="element-checkbox-item">
-        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateSelectedCount()"> ${cat.label}
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateMaxElementsLimit()"> ${cat.label}
       </label>
     `).join('');
+    updateMaxElementsLimit();
   }
 });
 
+function updateMaxElementsLimit() {
+  const selectedCats = document.querySelectorAll('.cat-checkbox:checked').length;
+  const maxElementsInput = document.getElementById('create-limit');
+  if (maxElementsInput) {
+    // Estimación máxima según categorías (aprox 5-6 por categoría)
+    maxElementsInput.max = selectedCats * 5 || 5;
+    if (parseInt(maxElementsInput.value) > parseInt(maxElementsInput.max)) {
+      maxElementsInput.value = maxElementsInput.max;
+    }
+  }
+}
+
 function toggleAllCategories(status) {
   document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = status);
+  updateMaxElementsLimit();
 }
 
 function switchView(viewId) {
@@ -39,6 +52,7 @@ function switchView(viewId) {
 function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
   const duration = document.getElementById('create-duration').value;
+  const elementLimit = document.getElementById('create-limit').value || 10;
   
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
@@ -49,7 +63,7 @@ function handleCreateRoom() {
     return alert("⚠️ Debes seleccionar al menos una categoría de valencia.");
   }
 
-  socket.emit('create_room', { title, duration, selectedCategories });
+  socket.emit('create_room', { title, duration, selectedCategories, elementLimit });
 }
 
 socket.on('room_created', ({ roomCode }) => {
@@ -119,6 +133,7 @@ function handleStartGame() {
 }
 
 socket.on('game_started', ({ deck }) => {
+  myScore = 0;
   if (document.getElementById('view-host-lobby').classList.contains('active')) {
     switchView('view-host-live');
   } else {
@@ -246,6 +261,16 @@ socket.on('timer_tick', (seconds) => {
   if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
 });
 
+// Al finalizar la partida, muestra el botón de volver al inicio
 socket.on('game_over', () => {
-  alert("⌛ ¡CONEXIÓN CERRADA: El tiempo de la red ha expirado!");
+  const gameLayout = document.querySelector('.game-layout');
+  if (gameLayout) {
+    gameLayout.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: #030712; border: 1px solid var(--cyber-cyan);">
+        <h2 style="color: var(--cyber-yellow); font-size: 1.8rem; margin-bottom: 15px;">🏆 ¡PARTIDA FINALIZADA!</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Revisa el ranking final en la tabla de posiciones.</p>
+        <button class="btn btn-cyan btn-large" onclick="window.location.reload()">◀ VOLVER AL INICIO</button>
+      </div>
+    `;
+  }
 });
