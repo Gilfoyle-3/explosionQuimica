@@ -42,15 +42,15 @@ const DB_ELEMENTOS = [
   { nombre: 'Actinio', simbolo: 'Ac', valencia: '+3' },
   { nombre: 'Lutecio', simbolo: 'Lu', valencia: '+3' },
 
-  // Mono-divalentes
+  // Mono-divalentes (+1, +2)
   { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
   { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' },
 
-  // Mono-trivalentes
+  // Mono-trivalentes (+1, +3)
   { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' },
   { nombre: 'Talio', simbolo: 'Tl', valencia: '+1, +3' },
 
-  // Di-trivalentes
+  // Di-trivalentes (+2, +3)
   { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3' },
   { nombre: 'Cobalto', simbolo: 'Co', valencia: '+2, +3' },
   { nombre: 'Níquel', simbolo: 'Ni', valencia: '+2, +3' },
@@ -59,7 +59,7 @@ const DB_ELEMENTOS = [
   { nombre: 'Yterbio', simbolo: 'Yb', valencia: '+2, +3' },
   { nombre: 'Tulio', simbolo: 'Tm', valencia: '+2, +3' },
 
-  // Di-tetravalentes
+  // Di-tetravalentes (+2, +4)
   { nombre: 'Plomo', simbolo: 'Pb', valencia: '+2, +4' },
   { nombre: 'Germanio', simbolo: 'Ge', valencia: '+2, +4' },
   { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4' },
@@ -88,7 +88,7 @@ const salas = {};
 
 io.on('connection', (socket) => {
 
-  // CREAR SALA
+  // CREAR SALA (ANFITRIÓN)
   socket.on('crear_sala', ({ numElementos }) => {
     const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
     const elementosCount = parseInt(numElementos, 10) || 8;
@@ -106,7 +106,7 @@ io.on('connection', (socket) => {
     socket.emit('sala_creada', { codigoSala, numElementos: elementosCount });
   });
 
-  // UNIRSE A SALA
+  // UNIRSE A SALA (CONCURSANTE)
   socket.on('unirse_sala', ({ codigoSala, nickname }) => {
     const sala = salas[codigoSala];
 
@@ -114,7 +114,7 @@ io.on('connection', (socket) => {
     if (sala.estado !== 'esperando') return socket.emit('error_login', 'El concurso ya inició.');
 
     const existe = sala.jugadores.some(j => j.nickname.toLowerCase() === nickname.trim().toLowerCase());
-    if (existe) return socket.emit('error_login', 'Ese nombre ya está registrado en la sala.');
+    if (existe) return socket.emit('error_login', 'Ese nombre ya está registrado.');
 
     const nuevoJugador = { id: socket.id, nickname: nickname.trim(), puntos: 0 };
     sala.jugadores.push(nuevoJugador);
@@ -143,7 +143,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // SELECCIONAR CARTA EN EL JUEGO
+  // SELECCIONAR CARTA
   socket.on('seleccionar_carta', ({ codigoSala, cartaId }) => {
     const sala = salas[codigoSala];
     if (!sala || sala.estado !== 'jugando') return;
@@ -189,7 +189,6 @@ function generarTablero(cantidad) {
     cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
   });
 
-  // Tarjetas especiales de poder
   cartas.push({ id: cardId++, tipo: 'poder', contenido: 'BOMBA', efecto: 'bomba', revelada: false, emparejada: false });
   cartas.push({ id: cardId++, tipo: 'poder', contenido: 'TORNADO', efecto: 'tornado', revelada: false, emparejada: false });
 
