@@ -3,7 +3,7 @@ let miCodigoSala = '';
 let esAnfitrion = false;
 
 // ==========================================
-// ACCIONES DEL JUGADOR
+// EMISORES CLIENTE
 // ==========================================
 
 function crearSala() {
@@ -20,6 +20,7 @@ function iniciarConcurso() {
   const nombreConcurso = document.getElementById('cfg-nombre').value;
   const duracionSegundos = document.getElementById('cfg-tiempo').value;
   const cantidadElementos = document.getElementById('cfg-elementos').value;
+  const incluirPoderes = document.getElementById('cfg-poderes').checked;
 
   const familias = [];
   document.querySelectorAll('.fam-check:checked').forEach(cb => familias.push(cb.value));
@@ -29,12 +30,13 @@ function iniciarConcurso() {
     nombreConcurso,
     duracionSegundos,
     cantidadElementos,
+    incluirPoderes,
     familias
   });
 }
 
 // ==========================================
-// LISTENERS DE SOCKET.IO
+// RECEPTORES SOCKET.IO
 // ==========================================
 
 socket.on('sala_creada', ({ codigoSala, familiasDisponibles }) => {
@@ -55,7 +57,7 @@ socket.on('sala_creada', ({ codigoSala, familiasDisponibles }) => {
     `;
   });
 
-  socket.emit('unirse_sala', { codigoSala, nickname: 'Anfitrión (Host)' });
+  socket.emit('unirse_sala', { codigoSala, nickname: 'Host (Anfitrión)' });
 });
 
 socket.on('unido_exitosamente', ({ codigoSala }) => {
@@ -65,7 +67,7 @@ socket.on('unido_exitosamente', ({ codigoSala }) => {
   document.getElementById('vista-lobby').classList.remove('oculto');
 
   if (!esAnfitrion) {
-    document.getElementById('panel-configuracion').style.opacity = '0.5';
+    document.getElementById('panel-configuracion').style.opacity = '0.4';
     document.getElementById('panel-configuracion').style.pointerEvents = 'none';
     document.getElementById('btn-iniciar').classList.add('oculto');
   }
@@ -78,7 +80,7 @@ socket.on('actualizar_lista_espera', ({ jugadores }) => {
     cont.innerHTML += `
       <div class="player-badge">
         <span>👤 ${j.nickname}</span>
-        <span style="color:var(--accent-neon)">Listo</span>
+        <span class="text-neon">Listo</span>
       </div>
     `;
   });
@@ -95,14 +97,23 @@ socket.on('concurso_iniciado', ({ tablero, puntuaciones, nombreConcurso, duracio
 });
 
 socket.on('actualizar_tablero', ({ tablero }) => renderizarTablero(tablero));
-
 socket.on('actualizar_puntuaciones', ({ puntuaciones }) => renderizarPuntuaciones(puntuaciones));
+
+socket.on('notificacion_evento', ({ mensaje }) => {
+  const banner = document.getElementById('banner-evento');
+  banner.innerText = mensaje;
+  banner.classList.remove('oculto');
+  
+  setTimeout(() => {
+    banner.classList.add('oculto');
+  }, 4000);
+});
 
 socket.on('error_login', (msg) => alert(`Error: ${msg}`));
 socket.on('error_juego', (msg) => alert(`Atención: ${msg}`));
 
 // ==========================================
-// RENDERIZADO DE INTERFAZ (UI)
+// RENDERIZADO RÁPIDO
 // ==========================================
 
 function renderizarTablero(tablero) {
@@ -111,15 +122,17 @@ function renderizarTablero(tablero) {
 
   tablero.forEach(carta => {
     const cardEl = document.createElement('div');
+    const esPoder = carta.tipo === 'PODER';
+    
     cardEl.className = `card-3d ${carta.revelada ? 'flipped' : ''} ${carta.emparejada ? 'matched' : ''}`;
     cardEl.onclick = () => socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
 
     cardEl.innerHTML = `
       <div class="card-inner">
         <div class="card-front">🧪</div>
-        <div class="card-back">
+        <div class="card-back ${esPoder ? 'card-poder' : ''}">
           <div>${carta.contenido}</div>
-          <span class="badge-type">${carta.tipo}</span>
+          <span class="badge-type">${esPoder ? 'PODER' : carta.tipo}</span>
         </div>
       </div>
     `;
@@ -134,8 +147,8 @@ function renderizarPuntuaciones(puntuaciones) {
     .sort((a,b) => b.puntos - a.puntos)
     .forEach((p, idx) => {
       cont.innerHTML += `
-        <div class="player-badge" style="border-color:${idx === 0 ? 'gold' : 'var(--accent-neon)'}">
-          <span>${idx + 1}. ${p.nickname}</span>
+        <div class="player-badge" style="border-color:${idx === 0 ? 'var(--accent-gold)' : 'var(--accent-neon)'}">
+          <span>${idx + 1}. ${p.nickname} ${p.escudo ? '🛡️' : ''}</span>
           <strong>${p.puntos} pts</strong>
         </div>
       `;
@@ -150,7 +163,7 @@ function iniciarTemporizador(segundos) {
     el.innerText = t;
     if (t <= 0) {
       clearInterval(timer);
-      alert('¡Tiempo agotado! Revisa las puntuaciones finales.');
+      alert('¡Fin del tiempo! Revisa la tabla de posiciones finales.');
     }
   }, 1000);
 }
