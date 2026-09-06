@@ -261,7 +261,6 @@ function generarTablero(familiasPermitidas, limiteElementos) {
 
   if (poolElementos.length === 0) poolElementos = FAMILIAS_QUIMICA.monovalentes;
 
-  // Mezclado aleatorio del pool general
   poolElementos.sort(() => Math.random() - 0.5);
   const seleccionados = poolElementos.slice(0, limiteElementos);
 
@@ -275,7 +274,6 @@ function generarTablero(familiasPermitidas, limiteElementos) {
     cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
   });
 
-  // Fisher-Yates Shuffle para cartas
   for (let i = cartas.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [cartas[i], cartas[j]] = [cartas[j], cartas[i]];
