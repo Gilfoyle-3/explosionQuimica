@@ -3,7 +3,6 @@ const socket = io();
 // BASE DE DATOS COMPLETA DE ELEMENTOS QUÍMICOS Y SUS VALENCIAS
 const ELEMENT_DATABASE = [
   // --- METALES DE VALENCIA FIJA ---
-  // Monovalentes (+1)
   { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
   { cat: 'mono_fixed', name: 'Litio', symbol: 'Li', val: '+1' },
   { cat: 'mono_fixed', name: 'Sodio', symbol: 'Na', val: '+1' },
@@ -14,7 +13,6 @@ const ELEMENT_DATABASE = [
   { cat: 'mono_fixed', name: 'Plata', symbol: 'Ag', val: '+1' },
   { cat: 'mono_fixed', name: 'Amonio', symbol: 'NH4', val: '+1' },
 
-  // Divalentes (+2)
   { cat: 'di_fixed', name: 'Berilio', symbol: 'Be', val: '+2' },
   { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
   { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
@@ -24,58 +22,40 @@ const ELEMENT_DATABASE = [
   { cat: 'di_fixed', name: 'Zinc', symbol: 'Zn', val: '+2' },
   { cat: 'di_fixed', name: 'Cadmio', symbol: 'Cd', val: '+2' },
 
-  // Trivalentes (+3)
   { cat: 'tri_fixed', name: 'Aluminio', symbol: 'Al', val: '+3' },
   { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
   { cat: 'tri_fixed', name: 'Galio', symbol: 'Ga', val: '+3' },
   { cat: 'tri_fixed', name: 'Indio', symbol: 'In', val: '+3' },
 
-  // Tetravalentes (+4) y Hexavalentes (+6)
   { cat: 'tri_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
   { cat: 'tri_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
   { cat: 'tri_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
 
   // --- METALES DE VALENCIA VARIABLE ---
-  // Mono y Divalentes (+1, +2)
   { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
   { cat: 'variable', name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
-
-  // Mono y Trivalentes (+1, +3)
   { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
   { cat: 'variable', name: 'Talio', symbol: 'Tl', val: '+1, +3' },
-
-  // Di y Trivalentes (+2, +3)
   { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
   { cat: 'variable', name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
   { cat: 'variable', name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
-
-  // Di y Tetravalentes (+2, +4)
   { cat: 'variable', name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
   { cat: 'variable', name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
   { cat: 'variable', name: 'Platino', symbol: 'Pt', val: '+2, +4' },
-
-  // Tri y Pentavalentes (+3, +5)
   { cat: 'variable', name: 'Antimonio', symbol: 'Sb', val: '+3, +5' },
 
   // --- NO METALES ---
-  // Halógenos (-1 | +1, +3, +5, +7)
   { cat: 'nometal', name: 'Flúor', symbol: 'F', val: '-1' },
   { cat: 'nometal', name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
   { cat: 'nometal', name: 'Bromo', symbol: 'Br', val: '-1, +1, +3, +5, +7' },
   { cat: 'nometal', name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
-
-  // Anfígenos (-2 | +2, +4, +6)
   { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' },
   { cat: 'nometal', name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
   { cat: 'nometal', name: 'Selenio', symbol: 'Se', val: '-2, +2, +4, +6' },
   { cat: 'nometal', name: 'Teluro', symbol: 'Te', val: '-2, +2, +4, +6' },
-
-  // Nitrogenoides (-3 | +1, +3, +5)
   { cat: 'nometal', name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
   { cat: 'nometal', name: 'Fósforo', symbol: 'P', val: '-3, +1, +3, +5' },
   { cat: 'nometal', name: 'Arsénico', symbol: 'As', val: '-3, +3, +5' },
-
-  // Carbonoides (-4 | +2, +4)
   { cat: 'nometal', name: 'Carbono', symbol: 'C', val: '-4, +2, +4' },
   { cat: 'nometal', name: 'Silicio', symbol: 'Si', val: '-4, +4' },
   { cat: 'nometal', name: 'Boro', symbol: 'B', val: '-3, +3' },
@@ -139,9 +119,22 @@ socket.on('roomCreated', ({ roomId }) => {
   mostrarSeccion('pantalla-sala-host');
 });
 
+// NUEVO LOBBY DE ESPERA EN VIVO (HOST)
 socket.on('playerJoined', ({ players }) => {
   const lista = document.getElementById('lista-jugadores-host');
-  if (lista) lista.innerHTML = players.map(p => `<li>👤 ${p.name}</li>`).join('');
+  if (lista) {
+    lista.className = 'players-waiting-grid';
+    lista.innerHTML = players.map(p => {
+      const initial = p.name ? p.name.charAt(0).toUpperCase() : '?';
+      return `
+        <div class="player-card-lobby">
+          <div class="player-avatar">${initial}</div>
+          <div class="player-name-lobby">${p.name}</div>
+          <span class="player-status-badge">Conectado</span>
+        </div>
+      `;
+    }).join('');
+  }
   actualizarTablaRanking(players);
 });
 
@@ -199,13 +192,11 @@ function renderBoard(deck) {
 function handleCardClick(cardEl, cardData, idx) {
   if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched') || flippedCards.length >= 3) return;
 
-  // CARTA BOMBA
   if (cardData.type === 'power_bomb') {
     activarBomba(idx);
     return;
   }
 
-  // CARTA TORNADO
   if (cardData.type === 'power_tornado') {
     activarTornado();
     return;
@@ -222,7 +213,6 @@ function handleCardClick(cardEl, cardData, idx) {
   }
 }
 
-// COMPROBACIÓN DE TRÍO (Símbolo + Nombre + Valencia)
 function checkTrioMatch() {
   const [c1, c2, c3] = flippedCards;
 
@@ -276,7 +266,6 @@ function checkTrioMatch() {
   }
 }
 
-// PODER: BOMBA
 function activarBomba(index) {
   const allCards = document.querySelectorAll('.card');
   const cols = Math.floor(Math.sqrt(allCards.length)) || 4;
@@ -309,7 +298,6 @@ function activarBomba(index) {
   }, 3000);
 }
 
-// PODER: TORNADO
 function activarTornado() {
   flippedCards.forEach(c => {
     c.element.classList.remove('flipped');
@@ -331,18 +319,29 @@ function activarTornado() {
   renderBoard(currentDeck);
 }
 
+// NUEVO RENDERIZADO DEL RANKING PRO
 function actualizarTablaRanking(players) {
-  const tbody = document.getElementById('tabla-ranking');
-  if (!tbody) return;
-  tbody.innerHTML = '';
+  const container = document.getElementById('tabla-ranking');
+  if (!container) return;
+  
+  container.className = 'ranking-list';
+  container.innerHTML = players.map((p, index) => {
+    const pos = index + 1;
+    let topClass = '';
+    let medal = `#${pos}`;
 
-  players.forEach((p, index) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>#${index + 1}</td>
-      <td><b>${p.name}</b></td>
-      <td><span class="neon-green">${p.points} pts</span></td>
+    if (pos === 1) { topClass = 'top-1'; medal = '🥇'; }
+    else if (pos === 2) { topClass = 'top-2'; medal = '🥈'; }
+    else if (pos === 3) { topClass = 'top-3'; medal = '🥉'; }
+
+    return `
+      <div class="ranking-card ${topClass}">
+        <div class="rank-left">
+          <div class="rank-badge">${medal}</div>
+          <div class="rank-name">${p.name}</div>
+        </div>
+        <div class="rank-score">${p.points} <span style="font-size:0.75rem; color:var(--text-muted)">pts</span></div>
+      </div>
     `;
-    tbody.appendChild(tr);
-  });
+  }).join('');
 }
