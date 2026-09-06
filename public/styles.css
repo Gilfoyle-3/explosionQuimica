@@ -31,19 +31,19 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 12px;
+  padding: 8px;
   overflow-x: hidden;
 }
 
 .container {
   width: 100%;
-  max-width: 540px;
+  max-width: 620px;
   background: var(--panel-bg);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--glass-border);
-  border-radius: 28px;
-  padding: 20px;
+  border-radius: 24px;
+  padding: 16px;
   box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.2);
 }
 
@@ -57,14 +57,14 @@ body {
 .seccion.activa {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   opacity: 1;
   transform: scale(1);
 }
 
 h1, h2 {
   text-align: center;
-  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
   font-weight: 900;
   background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #ec4899 100%);
   -webkit-background-clip: text;
@@ -75,21 +75,21 @@ h1, h2 {
 .panel {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 22px;
-  padding: 16px;
+  border-radius: 18px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 input[type="text"], input[type="number"] {
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: rgba(3, 7, 18, 0.6);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 14px;
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   outline: none;
 }
@@ -99,30 +99,30 @@ input:focus {
   box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
 }
 
-/* CHECKBOXES ESTILIZADOS */
+/* CHECKBOXES DETALLADOS */
 .checkbox-group {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   background: rgba(3, 7, 18, 0.5);
-  padding: 12px;
-  border-radius: 14px;
+  padding: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .checkbox-group label {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.88rem;
+  gap: 6px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-main);
   cursor: pointer;
 }
 
 .checkbox-group input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   accent-color: var(--neon-cyan);
   cursor: pointer;
 }
@@ -133,9 +133,9 @@ button {
   background: linear-gradient(135deg, #0284c7 0%, #7c3aed 50%, #db2777 100%);
   color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 18px;
-  padding: 16px;
-  font-size: clamp(0.95rem, 3vw, 1.1rem);
+  border-radius: 16px;
+  padding: 14px;
+  font-size: clamp(0.9rem, 3vw, 1rem);
   font-weight: 900;
   cursor: pointer;
   text-transform: uppercase;
@@ -169,7 +169,7 @@ button.btn-iniciar {
 .ranking-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   max-height: 60vh;
   overflow-y: auto;
   padding: 4px;
@@ -181,8 +181,8 @@ button.btn-iniciar {
   justify-content: space-between;
   background: rgba(15, 23, 42, 0.85);
   border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 12px 16px;
+  border-radius: 16px;
+  padding: 10px 14px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -205,25 +205,25 @@ button.btn-iniciar {
 .rank-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   overflow: hidden;
 }
 
 .rank-badge {
-  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-size: clamp(1.1rem, 3.5vw, 1.4rem);
   font-weight: 900;
-  min-width: 44px;
-  height: 44px;
+  min-width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(3, 7, 18, 0.7);
 }
 
 .rank-name {
   font-weight: 800;
-  font-size: clamp(0.95rem, 3.5vw, 1.2rem);
+  font-size: clamp(0.85rem, 3vw, 1.1rem);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -231,7 +231,7 @@ button.btn-iniciar {
 }
 
 .rank-sub {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   font-weight: 700;
   text-transform: uppercase;
@@ -240,34 +240,34 @@ button.btn-iniciar {
 .rank-score-pill {
   background: rgba(6, 182, 212, 0.2);
   border: 1px solid var(--neon-cyan);
-  padding: 8px 14px;
-  border-radius: 30px;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-weight: 900;
-  font-size: clamp(0.9rem, 3vw, 1.15rem);
+  font-size: clamp(0.85rem, 2.5vw, 1rem);
   color: var(--neon-cyan);
   white-space: nowrap;
 }
 
-.top-1 .rank-score-pill {
-  background: rgba(251, 191, 36, 0.25);
-  border-color: var(--neon-gold);
-  color: var(--neon-gold);
-}
-
-/* TABLERO RESPONSIVO */
+/* TABLERO MÁS GRANDE (MÁS CARTAS EN PANTALLA) */
 #tablero {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
   width: 100%;
+}
+
+@media (max-width: 420px) {
+  #tablero {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .card {
   aspect-ratio: 1 / 1.1;
-  max-height: 100px;
+  max-height: 80px;
   background: rgba(30, 41, 59, 0.85);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -276,11 +276,11 @@ button.btn-iniciar {
   user-select: none;
   position: relative;
   transition: all 0.3s ease;
-  padding: 4px;
+  padding: 2px;
 }
 
 .card .symbol {
-  font-size: clamp(0.85rem, 3.5vw, 1.1rem);
+  font-size: clamp(0.75rem, 3vw, 0.95rem);
   font-weight: 800;
   text-align: center;
   line-height: 1.1;
@@ -289,28 +289,27 @@ button.btn-iniciar {
 
 .card .type-tag {
   position: absolute;
-  bottom: 5px;
-  font-size: clamp(0.5rem, 1.8vw, 0.62rem);
+  bottom: 3px;
+  font-size: clamp(0.45rem, 1.5vw, 0.55rem);
   color: var(--neon-cyan);
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .card.flipped {
   background: linear-gradient(135deg, #0284c7 0%, #7c3aed 100%);
   border-color: #38bdf8;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
 }
 
 .card.matched {
   background: rgba(16, 185, 129, 0.15) !important;
   border-color: rgba(16, 185, 129, 0.5);
-  opacity: 0.2;
+  opacity: 0.15;
   pointer-events: none;
 }
 
-/* EFECTO PARA DESAPARECER CARTAS ESPECIALES */
 .card.power-used {
   opacity: 0;
   transform: scale(0);
