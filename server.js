@@ -9,17 +9,15 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.static('public'));
 
 // ==========================================
-// BASE DE DATOS QUÍMICA 100% COMPLETA
+// BASE DE DATOS QUÍMICA Y PODERES
 // ==========================================
 const FAMILIAS_QUIMICA = {
-  // METALES DE VALENCIA FIJA
   monovalentes: [
     { nombre: 'Litio', simbolo: 'Li', valencia: '+1' },
     { nombre: 'Sodio', simbolo: 'Na', valencia: '+1' },
     { nombre: 'Potasio', simbolo: 'K', valencia: '+1' },
     { nombre: 'Rubidio', simbolo: 'Rb', valencia: '+1' },
     { nombre: 'Cesio', simbolo: 'Cs', valencia: '+1' },
-    { nombre: 'Francio', simbolo: 'Fr', valencia: '+1' },
     { nombre: 'Plata', simbolo: 'Ag', valencia: '+1' },
     { nombre: 'Amonio', simbolo: 'NH4', valencia: '+1' }
   ],
@@ -29,29 +27,23 @@ const FAMILIAS_QUIMICA = {
     { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2' },
     { nombre: 'Estroncio', simbolo: 'Sr', valencia: '+2' },
     { nombre: 'Bario', simbolo: 'Ba', valencia: '+2' },
-    { nombre: 'Radio', simbolo: 'Ra', valencia: '+2' },
-    { nombre: 'Zinc', simbolo: 'Zn', valencia: '+2' },
-    { nombre: 'Cadmio', simbolo: 'Cd', valencia: '+2' }
+    { nombre: 'Zinc', simbolo: 'Zn', valencia: '+2' }
   ],
   trivalentes: [
     { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3' },
     { nombre: 'Escandio', simbolo: 'Sc', valencia: '+3' },
-    { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' },
-    { nombre: 'Indio', simbolo: 'In', valencia: '+3' }
+    { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' }
   ],
   tetravalentes: [
     { nombre: 'Zirconio', simbolo: 'Zr', valencia: '+4' },
     { nombre: 'Titanio', simbolo: 'Ti', valencia: '+4' },
-    { nombre: 'Osmio', simbolo: 'Os', valencia: '+4' },
-    { nombre: 'Iridio', simbolo: 'Ir', valencia: '+4' }
+    { nombre: 'Osmio', simbolo: 'Os', valencia: '+4' }
   ],
   hexavalentes: [
     { nombre: 'Uranio', simbolo: 'U', valencia: '+6' },
     { nombre: 'Wolframio', simbolo: 'W', valencia: '+6' },
     { nombre: 'Molibdeno', simbolo: 'Mo', valencia: '+6' }
   ],
-
-  // METALES DE VALENCIA VARIABLE
   variable_1_2: [
     { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
     { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' }
@@ -70,8 +62,6 @@ const FAMILIAS_QUIMICA = {
     { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4' },
     { nombre: 'Platino', simbolo: 'Pt', valencia: '+2, +4' }
   ],
-
-  // NO METALES
   halogenos: [
     { nombre: 'Flúor', simbolo: 'F', valencia: '-1' },
     { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1, +1, +3, +5, +7' },
@@ -81,25 +71,12 @@ const FAMILIAS_QUIMICA = {
   anfigenos: [
     { nombre: 'Oxígeno', simbolo: 'O', valencia: '-2' },
     { nombre: 'Azufre', simbolo: 'S', valencia: '-2, +2, +4, +6' },
-    { nombre: 'Selenio', simbolo: 'Se', valencia: '-2, +2, +4, +6' },
-    { nombre: 'Teluro', simbolo: 'Te', valencia: '-2, +2, +4, +6' }
+    { nombre: 'Selenio', simbolo: 'Se', valencia: '-2, +2, +4, +6' }
   ],
   nitrogenoides: [
     { nombre: 'Nitrógeno', simbolo: 'N', valencia: '-3, +1, +3, +5' },
-    { nombre: 'Fósforo', simbolo: 'P', valencia: '-3, +1, +3, +5' },
-    { nombre: 'Arsénico', simbolo: 'As', valencia: '-3, +3, +5' },
-    { nombre: 'Antimonio', simbolo: 'Sb', valencia: '-3, +3, +5' }
+    { nombre: 'Fósforo', simbolo: 'P', valencia: '-3, +1, +3, +5' }
   ],
-  carbonoides: [
-    { nombre: 'Carbono', simbolo: 'C', valencia: '-4, +2, +4' },
-    { nombre: 'Silicio', simbolo: 'Si', valencia: '-4, +4' },
-    { nombre: 'Germanio', simbolo: 'Ge', valencia: '-4, +4' }
-  ],
-  boroides: [
-    { nombre: 'Boro', simbolo: 'B', valencia: '-3, +3' }
-  ],
-
-  // ANFÓTEROS Y POLIVALENTES
   polivalentes: [
     { nombre: 'Cromo', simbolo: 'Cr', valencia: '+2, +3, +6' },
     { nombre: 'Manganeso', simbolo: 'Mn', valencia: '+2, +3, +4, +6, +7' },
@@ -107,10 +84,17 @@ const FAMILIAS_QUIMICA = {
   ]
 };
 
+const TIPOS_PODER = [
+  { tipo: 'PODER', subtipo: 'BOMBA', icono: '💣', descripcion: 'Limpia cartas seleccionadas del jugador actual' },
+  { tipo: 'PODER', subtipo: 'TORNADO', icono: '🌪️', descripcion: 'Reorganiza aleatoriamente todas las cartas ocultas' },
+  { tipo: 'PODER', subtipo: 'ROBA_PUNTOS', icono: '🥷', descripcion: 'Roba 50 puntos al líder actual' },
+  { tipo: 'PODER', subtipo: 'ESCUDO', icono: '🛡️', descripcion: 'Otorga 150 puntos inmunes inmediatos' }
+];
+
 const salas = {};
 
 io.on('connection', (socket) => {
-  // 1. HOST CREA SALA
+  // 1. CREAR SALA
   socket.on('crear_sala', () => {
     const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -121,10 +105,12 @@ io.on('connection', (socket) => {
       tablero: [],
       puntuaciones: {},
       cartasVolteadasPorJugador: {},
+      bloqueadoHasta: {},
       configuracion: {
         nombreConcurso: 'Torneo Química Pro',
         duracionSegundos: 120,
         cantidadElementos: 8,
+        incluirPoderes: true,
         familiasSeleccionadas: Object.keys(FAMILIAS_QUIMICA)
       }
     };
@@ -136,7 +122,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // 2. UNIRSE A LA SALA
+  // 2. UNIRSE A SALA
   socket.on('unirse_sala', ({ codigoSala, nickname }) => {
     const sala = salas[codigoSala];
     if (!sala) return socket.emit('error_login', 'La sala no existe.');
@@ -150,7 +136,7 @@ io.on('connection', (socket) => {
     }
 
     sala.jugadores.push({ id: socket.id, nickname: nickLimpio });
-    sala.puntuaciones[socket.id] = { nickname: nickLimpio, puntos: 0 };
+    sala.puntuaciones[socket.id] = { nickname: nickLimpio, puntos: 0, escudo: false };
     sala.cartasVolteadasPorJugador[socket.id] = [];
 
     socket.join(codigoSala);
@@ -159,9 +145,9 @@ io.on('connection', (socket) => {
   });
 
   // 3. INICIAR CONCURSO
-  socket.on('iniciar_concurso', ({ codigoSala, nombreConcurso, duracionSegundos, cantidadElementos, familias }) => {
+  socket.on('iniciar_concurso', ({ codigoSala, nombreConcurso, duracionSegundos, cantidadElementos, incluirPoderes, familias }) => {
     const sala = salas[codigoSala];
-    if (!sala) return socket.emit('error_juego', 'La sala especificada no existe.');
+    if (!sala) return socket.emit('error_juego', 'La sala no existe.');
     if (sala.anfitrion !== socket.id) return socket.emit('error_juego', 'Permiso denegado.');
 
     const familiasValidas = Array.isArray(familias) && familias.length > 0 ? familias : Object.keys(FAMILIAS_QUIMICA);
@@ -170,9 +156,10 @@ io.on('connection', (socket) => {
     sala.configuracion.nombreConcurso = nombreConcurso || 'Torneo Química Pro';
     sala.configuracion.duracionSegundos = parseInt(duracionSegundos) || 120;
     sala.configuracion.cantidadElementos = limiteElementos;
+    sala.configuracion.incluirPoderes = Boolean(incluirPoderes);
     sala.configuracion.familiasSeleccionadas = familiasValidas;
 
-    sala.tablero = generarTablero(familiasValidas, limiteElementos);
+    sala.tablero = generarTablero(familiasValidas, limiteElementos, sala.configuracion.incluirPoderes);
     sala.estado = 'jugando';
 
     io.to(codigoSala).emit('concurso_iniciado', {
@@ -183,10 +170,13 @@ io.on('connection', (socket) => {
     });
   });
 
-  // 4. VOLTEAR Y EVALUAR TRÍOS
+  // 4. LÓGICA DE SELECCIÓN Y ACTIVACIÓN DE PODERES
   socket.on('seleccionar_carta', ({ codigoSala, cartaId }) => {
     const sala = salas[codigoSala];
     if (!sala || sala.estado !== 'jugando') return;
+
+    // Verificar si el jugador está bajo un delay del servidor
+    if (sala.bloqueadoHasta[socket.id] && Date.now() < sala.bloqueadoHasta[socket.id]) return;
 
     if (!sala.cartasVolteadasPorJugador[socket.id]) {
       sala.cartasVolteadasPorJugador[socket.id] = [];
@@ -198,6 +188,19 @@ io.on('connection', (socket) => {
     const carta = sala.tablero.find(c => c.id === cartaId);
     if (!carta || carta.revelada || carta.emparejada) return;
 
+    // SI ES CARTA DE PODER ESECIAL
+    if (carta.tipo === 'PODER') {
+      carta.revelada = true;
+      carta.emparejada = true;
+      
+      ejecutarPoder(sala, socket.id, carta.subtipo, codigoSala);
+      
+      io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
+      io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
+      return;
+    }
+
+    // SI ES CARTA NORMAL DE QUÍMICA
     carta.revelada = true;
     misVolteadas.push(carta);
 
@@ -222,6 +225,7 @@ io.on('connection', (socket) => {
         io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
         io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
       } else {
+        sala.bloqueadoHasta[socket.id] = Date.now() + 1200;
         setTimeout(() => {
           c1.revelada = false;
           c2.revelada = false;
@@ -239,6 +243,7 @@ io.on('connection', (socket) => {
       sala.jugadores = sala.jugadores.filter(j => j.id !== socket.id);
       delete sala.puntuaciones[socket.id];
       delete sala.cartasVolteadasPorJugador[socket.id];
+      delete sala.bloqueadoHasta[socket.id];
 
       io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
       io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
@@ -250,7 +255,80 @@ io.on('connection', (socket) => {
   });
 });
 
-function generarTablero(familiasPermitidas, limiteElementos) {
+// MOTOR DE PODERES
+function ejecutarPoder(sala, jugadorId, subtipo, codigoSala) {
+  const jugador = sala.puntuaciones[jugadorId];
+  if (!jugador) return;
+
+  let eventoMsg = '';
+
+  switch (subtipo) {
+    case 'BOMBA':
+      // Voltea inmediatamente las cartas que el jugador tenía abiertas en fallo
+      if (sala.cartasVolteadasPorJugador[jugadorId]) {
+        sala.cartasVolteadasPorJugador[jugadorId].forEach(c => c.revelada = false);
+        sala.cartasVolteadasPorJugador[jugadorId] = [];
+      }
+      eventoMsg = `💣 ¡${jugador.nickname} detonó una BOMBA y limpió sus selección!`;
+      break;
+
+    case 'TORNADO':
+      // Baraja las cartas no reveladas en el tablero
+      const ocultas = sala.tablero.filter(c => !c.revelada && !c.emparejada);
+      for (let i = ocultas.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tempContenido = ocultas[i].contenido;
+        const tempGrupo = ocultas[i].grupoId;
+        const tempTipo = ocultas[i].tipo;
+        const tempSubtipo = ocultas[i].subtipo;
+
+        ocultas[i].contenido = ocultas[j].contenido;
+        ocultas[i].grupoId = ocultas[j].grupoId;
+        ocultas[i].tipo = ocultas[j].tipo;
+        ocultas[i].subtipo = ocultas[j].subtipo;
+
+        ocultas[j].contenido = tempContenido;
+        ocultas[j].grupoId = tempGrupo;
+        ocultas[j].tipo = tempTipo;
+        ocultas[j].subtipo = tempSubtipo;
+      }
+      eventoMsg = `🌪️ ¡TORNADO! El tablero no revelado ha sido reorganizado.`;
+      break;
+
+    case 'ROBA_PUNTOS':
+      // Busca al líder y le roba 50 puntos
+      let liderId = null;
+      let maxPuntos = -1;
+
+      Object.keys(sala.puntuaciones).forEach(id => {
+        if (id !== jugadorId && sala.puntuaciones[id].puntos > maxPuntos) {
+          maxPuntos = sala.puntuaciones[id].puntos;
+          liderId = id;
+        }
+      });
+
+      if (liderId && maxPuntos > 0) {
+        const robo = Math.min(50, sala.puntuaciones[liderId].puntos);
+        sala.puntuaciones[liderId].puntos -= robo;
+        jugador.puntos += robo;
+        eventoMsg = `🥷 ¡${jugador.nickname} robó ${robo} pts a ${sala.puntuaciones[liderId].nickname}!`;
+      } else {
+        jugador.puntos += 50;
+        eventoMsg = `🥷 ¡${jugador.nickname} activó Roba Puntos y ganó 50 pts!`;
+      }
+      break;
+
+    case 'ESCUDO':
+      jugador.puntos += 150;
+      jugador.escudo = true;
+      eventoMsg = `🛡️ ¡${jugador.nickname} activó ESCUDO: +150 pts y protección!`;
+      break;
+  }
+
+  io.to(codigoSala).emit('notificacion_evento', { mensaje: eventoMsg });
+}
+
+function generarTablero(familiasPermitidas, limiteElementos, incluirPoderes) {
   let poolElementos = [];
 
   familiasPermitidas.forEach(fam => {
@@ -274,6 +352,22 @@ function generarTablero(familiasPermitidas, limiteElementos) {
     cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
   });
 
+  // AGREGAR PODERES ESPECIALES SI ESTÁN ACTIVADOS
+  if (incluirPoderes) {
+    TIPOS_PODER.forEach(pod => {
+      cartas.push({
+        id: cardId++,
+        tipo: pod.tipo,
+        subtipo: pod.subtipo,
+        contenido: `${pod.icono} ${pod.subtipo}`,
+        grupoId: `PODER_${pod.subtipo}`,
+        revelada: false,
+        emparejada: false
+      });
+    });
+  }
+
+  // Mezclado determinista Fisher-Yates
   for (let i = cartas.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [cartas[i], cartas[j]] = [cartas[j], cartas[i]];
@@ -283,4 +377,4 @@ function generarTablero(familiasPermitidas, limiteElementos) {
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Servidor Química Pro corriendo en http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Engine Química Pro activo en http://localhost:${PORT}`));
