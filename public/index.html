@@ -3,49 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CYBER_CHEM // EXPLOSIÓN QUÍMICA v2.07</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <title>CYBER_CHEM // Juego de Química</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <div class="scanline"></div>
-  <div class="overlay-grid"></div>
-
   <div class="cyber-container">
     
     <header class="hud-header">
-      <h1 class="glitch" data-text="CYBER_CHEM">CYBER_CHEM</h1>
-      <p class="subtitle">> EXPLOSIÓN QUÍMICA // FULL_VALENCE_DATABASE</p>
+      <h1 class="glitch">CYBER_CHEM</h1>
+      <p class="subtitle">> VALENCE MATCHING GAME</p>
     </header>
 
     <!-- PÁGINA PRINCIPAL -->
     <section id="pantalla-inicio" class="seccion activa">
       <div class="hud-controls vertical">
         <button class="cyber-btn primary" onclick="mostrarSeccion('pantalla-crear')">⚗️ CREAR CONCURSO (HOST)</button>
-        <button class="cyber-btn warning" onclick="mostrarSeccion('pantalla-ingresar')">🧪 INGRESAR A UN CONCURSO</button>
-        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-reglas')">📜 REGLAS DEL JUEGO</button>
+        <button class="cyber-btn warning" onclick="mostrarSeccion('pantalla-ingresar')">🧪 UNIRSE A CONCURSO</button>
       </div>
     </section>
 
-    <!-- CREAR CONCURSO -->
+    <!-- CREAR CONCURSO CON CHECKBOXES DE CATEGORÍAS -->
     <section id="pantalla-crear" class="seccion">
-      <h2 class="cyber-title">CONFIGURAR NUEVA SALA</h2>
+      <h2 class="cyber-title">CONFIGURAR SALA</h2>
       
       <div class="form-group">
         <label class="cyber-label">NOMBRE DEL CONCURSO</label>
-        <input type="text" id="nombreConcurso" class="cyber-input" placeholder="Ej: Torneo Nacional de Química">
+        <input type="text" id="nombreConcurso" class="cyber-input" placeholder="Ej: Torneo Química">
       </div>
       
       <div class="form-group">
-        <label class="cyber-label">TIEMPO DE PARTIDA (SEGUNDOS)</label>
+        <label class="cyber-label">TIEMPO (SEGUNDOS)</label>
         <input type="number" id="tiempoConcurso" class="cyber-input" value="60">
+      </div>
+
+      <div class="form-group">
+        <label class="cyber-label">SELECCIONA GRUPOS DE LA TABLA:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" class="cat-checkbox" value="mono_fixed" checked> Monovalentes (+1)</label>
+          <label><input type="checkbox" class="cat-checkbox" value="di_fixed" checked> Divalentes (+2)</label>
+          <label><input type="checkbox" class="cat-checkbox" value="tri_fixed" checked> Trivalentes (+3)</label>
+          <label><input type="checkbox" class="cat-checkbox" value="variable" checked> Valencia Variable</label>
+          <label><input type="checkbox" class="cat-checkbox" value="nometal" checked> No Metales</label>
+          <label><input type="checkbox" class="cat-checkbox" value="anfotero" checked> Anfóteros</label>
+        </div>
       </div>
 
       <div class="hud-controls">
         <button class="cyber-btn primary" onclick="crearConcurso()">GENERAR SALA</button>
-        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">CANCELAR</button>
+        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">VOLVER</button>
       </div>
     </section>
 
@@ -54,41 +61,27 @@
       <h2 class="cyber-title">CONECTAR A SALA</h2>
       
       <div class="form-group">
-        <label class="cyber-label">TU ALIAS / JUGADOR</label>
-        <input type="text" id="nombreJugador" class="cyber-input" placeholder="Ej: MarieCurie_99">
+        <label class="cyber-label">TU ALIAS / NOMBRE</label>
+        <input type="text" id="nombreJugador" class="cyber-input" placeholder="Ej: MarieCurie">
       </div>
       
       <div class="form-group">
-        <label class="cyber-label">CÓDIGO DE ACCESO</label>
+        <label class="cyber-label">CÓDIGO DE SALA</label>
         <input type="text" id="codigoIngreso" class="cyber-input" placeholder="Ej: 4021" maxlength="6">
       </div>
 
       <div class="hud-controls">
-        <button class="cyber-btn warning" onclick="unirseConcurso()">UNIRSE AL JUEGO</button>
+        <button class="cyber-btn warning" onclick="unirseConcurso()">INGRESAR</button>
         <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">VOLVER</button>
       </div>
     </section>
 
-    <!-- REGLAS -->
-    <section id="pantalla-reglas" class="seccion">
-      <h2 class="cyber-title">PROTOCOLO DE JUEGO</h2>
-      <div class="reglas-texto">
-        <p>1. <b>FORMACIÓN DE PAREJAS:</b> Encuentra la combinación exacta de Elemento y Valencia.</p>
-        <p>2. ⚡ <b>SISTEMA DE VICTORIA:</b> Acumula el mayor puntaje antes de que termine el temporizador.</p>
-      </div>
-      <div class="hud-controls">
-        <button class="cyber-btn secondary" onclick="mostrarSeccion('pantalla-inicio')">ENTENDIDO</button>
-      </div>
-    </section>
-
-    <!-- SALA DE ESPERA (HOST) -->
+    <!-- SALA DE ESPERA HOST -->
     <section id="pantalla-sala-host" class="seccion">
-      <h2 class="cyber-title">CÓDIGO DE SALA: <span id="codigo-display" class="neon-cyan">------</span></h2>
-      <p class="subtitle">ESPERANDO JUGADORES EN LÍNEA...</p>
+      <h2 class="cyber-title">CÓDIGO: <span id="codigo-display" class="neon-cyan">----</span></h2>
+      <p class="subtitle">ESPERANDO JUGADORES...</p>
       
-      <div class="player-list-container">
-        <ul id="lista-jugadores-host" class="cyber-list"></ul>
-      </div>
+      <ul id="lista-jugadores-host" class="cyber-list"></ul>
 
       <div class="hud-controls">
         <button class="cyber-btn primary" onclick="iniciarConcurso()">¡INICIAR CONCURSO!</button>
@@ -103,7 +96,7 @@
           <span id="cronometro-jugador" class="value neon-cyan">60s</span>
         </div>
         <div class="stat-box">
-          <span class="label">PUNTAJE</span>
+          <span class="label">PUNTOS</span>
           <span id="mis-puntos" class="value neon-green">0</span>
         </div>
       </div>
@@ -111,7 +104,7 @@
       <main class="grid-cartas" id="tablero"></main>
     </section>
 
-    <!-- PANTALLA DE RANKING (HOST Y EN-GAME) -->
+    <!-- RANKING EN VIVO -->
     <section id="pantalla-ranking" class="seccion">
       <h2 class="cyber-title" id="titulo-ranking">RANKING EN TIEMPO REAL</h2>
       <h3 class="subtitle">TIEMPO RESTANTE: <span id="cronometro-host" class="neon-pink">60</span>s</h3>
