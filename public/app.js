@@ -7,21 +7,22 @@ const seccionLogin = document.getElementById('seccion-login');
 const seccionLobby = document.getElementById('seccion-lobby');
 const seccionJuego = document.getElementById('seccion-juego');
 
-// Controles de Login y Selección de Elementos
-const btnElementOpts = document.querySelectorAll('.btn-element-opt');
-const inputNumElementos = document.getElementById('select-num-elementos');
+// Controles de Login
 const btnCrearSala = document.getElementById('btn-crear-sala');
 const btnUnirse = document.getElementById('btn-unirse');
 const inputNickname = document.getElementById('input-nickname');
 const inputCodigo = document.getElementById('input-codigo');
 const mensajeError = document.getElementById('mensaje-error');
 
-// Controles del Lobby
+// Controles de Sala de Espera (Lobby)
 const lobbyCodigoDisplay = document.getElementById('lobby-codigo-display');
 const listaJugadores = document.getElementById('lista-jugadores');
+const panelAnfitrionConfig = document.getElementById('panel-anfitrion-config');
 const panelAnfitrionControles = document.getElementById('panel-anfitrion-controles');
 const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
 const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
+const btnElementOpts = document.querySelectorAll('.btn-element-opt');
+const inputNumElementos = document.getElementById('select-num-elementos');
 
 // Controles del Juego
 const juegoCodigoDisplay = document.getElementById('juego-codigo-display');
@@ -31,10 +32,9 @@ const tableroCartas = document.getElementById('tablero-cartas');
 // Estado local
 let miCodigoSala = null;
 let esAnfitrion = false;
-let bloqueado = false;
 
 // ==========================================
-// SELECCIÓN VISUAL DE ELEMENTOS (4, 8, 12, 16)
+// SELECCIÓN VISUAL DE ELEMENTOS EN LOBBY
 // ==========================================
 btnElementOpts.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -48,18 +48,20 @@ btnElementOpts.forEach(btn => {
 // 1. CREAR SALA (ANFITRIÓN)
 // ==========================================
 btnCrearSala.addEventListener('click', () => {
-  const numElementos = parseInt(inputNumElementos.value, 10) || 8;
-  socket.emit('crear_sala', { numElementos });
+  socket.emit('crear_sala');
 });
 
 socket.on('sala_creada', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = true;
 
+  // Cambiar a la Sala de Espera
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
+  // Mostrar la configuración y controles solo al anfitrión
+  panelAnfitrionConfig.classList.remove('hidden');
   panelAnfitrionControles.classList.remove('hidden');
   pantallaEsperaConcursante.classList.add('hidden');
   mensajeError.textContent = '';
@@ -84,10 +86,13 @@ socket.on('unido_exitosamente', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = false;
 
+  // Cambiar a la Sala de Espera del Concursante
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
+  // Ocultar opciones de anfitrión y mostrar banner de espera
+  panelAnfitrionConfig.classList.add('hidden');
   panelAnfitrionControles.classList.add('hidden');
   pantallaEsperaConcursante.classList.remove('hidden');
   mensajeError.textContent = '';
@@ -111,11 +116,12 @@ socket.on('actualizar_lista_espera', ({ jugadores }) => {
 });
 
 // ==========================================
-// 4. INICIAR CONCURSO
+// 4. INICIAR CONCURSO (SOLO ANFITRIÓN)
 // ==========================================
 btnIniciarConcurso.addEventListener('click', () => {
   if (miCodigoSala && esAnfitrion) {
-    socket.emit('iniciar_concurso', { codigoSala: miCodigoSala });
+    const numElementos = parseInt(inputNumElementos.value, 10) || 8;
+    socket.emit('iniciar_concurso', { codigoSala: miCodigoSala, numElementos });
   }
 });
 
@@ -133,7 +139,7 @@ socket.on('error_inicio', (msg) => {
 });
 
 // ==========================================
-// 5. RENDERIZADO DEL TABLERO
+// 5. RENDERIZADO Y JUEGO
 // ==========================================
 function renderizarTablero(cartas) {
   tableroCartas.innerHTML = '';
@@ -156,7 +162,7 @@ function renderizarTablero(cartas) {
     }
 
     cardEl.addEventListener('click', () => {
-      if (bloqueado || carta.revelada || carta.emparejada) return;
+      if (carta.revelada || carta.emparejada) return;
       socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
     });
 
