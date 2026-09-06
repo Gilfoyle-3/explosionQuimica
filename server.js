@@ -4,377 +4,206 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.static('public'));
 
-// ==========================================
-// BASE DE DATOS QUÍMICA Y PODERES
-// ==========================================
-const FAMILIAS_QUIMICA = {
-  monovalentes: [
-    { nombre: 'Litio', simbolo: 'Li', valencia: '+1' },
-    { nombre: 'Sodio', simbolo: 'Na', valencia: '+1' },
-    { nombre: 'Potasio', simbolo: 'K', valencia: '+1' },
-    { nombre: 'Rubidio', simbolo: 'Rb', valencia: '+1' },
-    { nombre: 'Cesio', simbolo: 'Cs', valencia: '+1' },
-    { nombre: 'Plata', simbolo: 'Ag', valencia: '+1' },
-    { nombre: 'Amonio', simbolo: 'NH4', valencia: '+1' }
-  ],
-  divalentes: [
-    { nombre: 'Berilio', simbolo: 'Be', valencia: '+2' },
-    { nombre: 'Magnesio', simbolo: 'Mg', valencia: '+2' },
-    { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2' },
-    { nombre: 'Estroncio', simbolo: 'Sr', valencia: '+2' },
-    { nombre: 'Bario', simbolo: 'Ba', valencia: '+2' },
-    { nombre: 'Zinc', simbolo: 'Zn', valencia: '+2' }
-  ],
-  trivalentes: [
-    { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3' },
-    { nombre: 'Escandio', simbolo: 'Sc', valencia: '+3' },
-    { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' }
-  ],
-  tetravalentes: [
-    { nombre: 'Zirconio', simbolo: 'Zr', valencia: '+4' },
-    { nombre: 'Titanio', simbolo: 'Ti', valencia: '+4' },
-    { nombre: 'Osmio', simbolo: 'Os', valencia: '+4' }
-  ],
-  hexavalentes: [
-    { nombre: 'Uranio', simbolo: 'U', valencia: '+6' },
-    { nombre: 'Wolframio', simbolo: 'W', valencia: '+6' },
-    { nombre: 'Molibdeno', simbolo: 'Mo', valencia: '+6' }
-  ],
-  variable_1_2: [
-    { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
-    { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' }
-  ],
-  variable_1_3: [
-    { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' },
-    { nombre: 'Talio', simbolo: 'Tl', valencia: '+1, +3' }
-  ],
-  variable_2_3: [
-    { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3' },
-    { nombre: 'Cobalto', simbolo: 'Co', valencia: '+2, +3' },
-    { nombre: 'Níquel', simbolo: 'Ni', valencia: '+2, +3' }
-  ],
-  variable_2_4: [
-    { nombre: 'Plomo', simbolo: 'Pb', valencia: '+2, +4' },
-    { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4' },
-    { nombre: 'Platino', simbolo: 'Pt', valencia: '+2, +4' }
-  ],
-  halogenos: [
-    { nombre: 'Flúor', simbolo: 'F', valencia: '-1' },
-    { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1, +1, +3, +5, +7' },
-    { nombre: 'Bromo', simbolo: 'Br', valencia: '-1, +1, +3, +5, +7' },
-    { nombre: 'Yodo', simbolo: 'I', valencia: '-1, +1, +3, +5, +7' }
-  ],
-  anfigenos: [
-    { nombre: 'Oxígeno', simbolo: 'O', valencia: '-2' },
-    { nombre: 'Azufre', simbolo: 'S', valencia: '-2, +2, +4, +6' },
-    { nombre: 'Selenio', simbolo: 'Se', valencia: '-2, +2, +4, +6' }
-  ],
-  nitrogenoides: [
-    { nombre: 'Nitrógeno', simbolo: 'N', valencia: '-3, +1, +3, +5' },
-    { nombre: 'Fósforo', simbolo: 'P', valencia: '-3, +1, +3, +5' }
-  ],
-  polivalentes: [
-    { nombre: 'Cromo', simbolo: 'Cr', valencia: '+2, +3, +6' },
-    { nombre: 'Manganeso', simbolo: 'Mn', valencia: '+2, +3, +4, +6, +7' },
-    { nombre: 'Bismuto', simbolo: 'Bi', valencia: '+3, +5' }
-  ]
-};
+// Almacenamiento temporal en memoria RAM (Sin base de datos)
+const rooms = {};
 
-const TIPOS_PODER = [
-  { tipo: 'PODER', subtipo: 'BOMBA', icono: '💣', descripcion: 'Limpia cartas seleccionadas del jugador actual' },
-  { tipo: 'PODER', subtipo: 'TORNADO', icono: '🌪️', descripcion: 'Reorganiza aleatoriamente todas las cartas ocultas' },
-  { tipo: 'PODER', subtipo: 'ROBA_PUNTOS', icono: '🥷', descripcion: 'Roba 50 puntos al líder actual' },
-  { tipo: 'PODER', subtipo: 'ESCUDO', icono: '🛡️', descripcion: 'Otorga 150 puntos inmunes inmediatos' }
+// TABLA DE VALENCIAS COMPLETA
+const valenciaDatabase = [
+  // --- METALES ---
+  // Monovalentes (+1)
+  { elem: "Litio", sym: "Li", val: "+1", cat: "metales" },
+  { elem: "Sodio", sym: "Na", val: "+1", cat: "metales" },
+  { elem: "Potasio", sym: "K", val: "+1", cat: "metales" },
+  { elem: "Rubidio", sym: "Rb", val: "+1", cat: "metales" },
+  { elem: "Cesio", sym: "Cs", val: "+1", cat: "metales" },
+  { elem: "Francio", sym: "Fr", val: "+1", cat: "metales" },
+  { elem: "Plata", sym: "Ag", val: "+1", cat: "metales" },
+  { elem: "Amonio", sym: "NH4", val: "+1", cat: "metales" },
+
+  // Divalentes (+2)
+  { elem: "Berilio", sym: "Be", val: "+2", cat: "metales" },
+  { elem: "Magnesio", sym: "Mg", val: "+2", cat: "metales" },
+  { elem: "Calcio", sym: "Ca", val: "+2", cat: "metales" },
+  { elem: "Estroncio", sym: "Sr", val: "+2", cat: "metales" },
+  { elem: "Bario", sym: "Ba", val: "+2", cat: "metales" },
+  { elem: "Radio", sym: "Ra", val: "+2", cat: "metales" },
+  { elem: "Zinc", sym: "Zn", val: "+2", cat: "metales" },
+  { elem: "Cadmio", sym: "Cd", val: "+2", cat: "metales" },
+
+  // Trivalentes (+3)
+  { elem: "Aluminio", sym: "Al", val: "+3", cat: "metales" },
+  { elem: "Bismuto", sym: "Bi", val: "+3", cat: "metales" },
+  { elem: "Galio", sym: "Ga", val: "+3", cat: "metales" },
+  { elem: "Indio", sym: "In", val: "+3", cat: "metales" },
+
+  // Tetravalentes (+4) / Hexavalentes (+6)
+  { elem: "Titanio", sym: "Ti", val: "+4", cat: "metales" },
+  { elem: "Osmio", sym: "Os", val: "+4", cat: "metales" },
+  { elem: "Zirconio", sym: "Zr", val: "+4", cat: "metales" },
+
+  // Valencias Variables (Metales)
+  { elem: "Cobre", sym: "Cu", val: "+1, +2", cat: "metales" },
+  { elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "metales" },
+  { elem: "Oro", sym: "Au", val: "+1, +3", cat: "metales" },
+  { elem: "Talo", sym: "Tl", val: "+1, +3", cat: "metales" },
+  { elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "metales" },
+  { elem: "Cobalto", sym: "Co", val: "+2, +3", cat: "metales" },
+  { elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "metales" },
+  { elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "metales" },
+  { elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "metales" },
+  { elem: "Platino", sym: "Pt", val: "+2, +4", cat: "metales" },
+  { elem: "Cromo", sym: "Cr", val: "+2, +3, +6", cat: "metales" },
+  { elem: "Manganeso", sym: "Mn", val: "+2, +3, +4, +6, +7", cat: "metales" },
+
+  // --- NO METALES ---
+  // Halógenos (-1) / (+1, +3, +5, +7)
+  { elem: "Flúor", sym: "F", val: "-1", cat: "nometales" },
+  { elem: "Cloro", sym: "Cl", val: "-1, +1, +3, +5, +7", cat: "nometales" },
+  { elem: "Bromo", sym: "Br", val: "-1, +1, +3, +5, +7", cat: "nometales" },
+  { elem: "Yodo", sym: "I", val: "-1, +1, +3, +5, +7", cat: "nometales" },
+
+  // Anfígenos (-2) / (+2, +4, +6)
+  { elem: "Oxígeno", sym: "O", val: "-2", cat: "nometales" },
+  { elem: "Azufre", sym: "S", val: "-2, +2, +4, +6", cat: "nometales" },
+  { elem: "Selenio", sym: "Se", val: "-2, +2, +4, +6", cat: "nometales" },
+  { elem: "Telurio", sym: "Te", val: "-2, +2, +4, +6", cat: "nometales" },
+
+  // Nitrogenoides (-3) / (+1, +2, +3, +4, +5)
+  { elem: "Nitrógeno", sym: "N", val: "-3, +1, +2, +3, +4, +5", cat: "nometales" },
+  { elem: "Fósforo", sym: "P", val: "-3, +3, +5", cat: "nometales" },
+  { elem: "Arsénico", sym: "As", val: "-3, +3, +5", cat: "nometales" },
+  { elem: "Antimonio", sym: "Sb", val: "-3, +3, +5", cat: "nometales" },
+  { elem: "Boro", sym: "B", val: "-3, +3", cat: "nometales" },
+
+  // Carbonoides (-4) / (+2, +4)
+  { elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "nometales" },
+  { elem: "Silicio", sym: "Si", val: "-4, +4", cat: "nometales" },
+  { elem: "Germanio", sym: "Ge", val: "-4, +4", cat: "nometales" },
+
+  // Hidrógeno
+  { elem: "Hidrógeno", sym: "H", val: "-1, +1", cat: "nometales" }
 ];
 
-const salas = {};
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 io.on('connection', (socket) => {
-  // 1. CREAR SALA
-  socket.on('crear_sala', () => {
-    const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
-
-    salas[codigoSala] = {
-      anfitrion: socket.id,
-      estado: 'esperando',
-      jugadores: [],
-      tablero: [],
-      puntuaciones: {},
-      cartasVolteadasPorJugador: {},
-      bloqueadoHasta: {},
-      configuracion: {
-        nombreConcurso: 'Torneo Química Pro',
-        duracionSegundos: 120,
-        cantidadElementos: 8,
-        incluirPoderes: true,
-        familiasSeleccionadas: Object.keys(FAMILIAS_QUIMICA)
-      }
+  
+  // Crear sala (Creador/Admin)
+  socket.on('create_room', ({ title, duration, elementCount, category }) => {
+    const roomCode = generateCode();
+    rooms[roomCode] = {
+      title,
+      duration: parseInt(duration) * 60,
+      elementCount: parseInt(elementCount),
+      category, // 'metales', 'nometales' o 'todos'
+      hostId: socket.id,
+      started: false,
+      players: {},
+      deck: []
     };
+    
+    socket.join(roomCode);
+    socket.emit('room_created', { roomCode, title });
+  });
 
-    socket.join(codigoSala);
-    socket.emit('sala_creada', { 
-      codigoSala, 
-      familiasDisponibles: Object.keys(FAMILIAS_QUIMICA) 
+  // Unirse a sala (Jugador)
+  socket.on('join_room', ({ name, roomCode }) => {
+    const room = rooms[roomCode];
+
+    if (!room) {
+      return socket.emit('error_message', 'La sala no existe.');
+    }
+    if (room.started) {
+      return socket.emit('error_message', 'El concurso ya ha iniciado.');
+    }
+
+    room.players[socket.id] = { name, score: 0 };
+    socket.join(roomCode);
+
+    socket.emit('joined_waiting_room', { title: room.title, name });
+    io.to(roomCode).emit('update_player_list', Object.values(room.players));
+  });
+
+  // Iniciar Concurso (Creador)
+  socket.on('start_game', (roomCode) => {
+    const room = rooms[roomCode];
+    if (!room || room.hostId !== socket.id) return;
+
+    room.started = true;
+
+    // Filtrar base de datos según la categoría elegida
+    let pool = valenciaDatabase;
+    if (room.category === 'metales') {
+      pool = valenciaDatabase.filter(item => item.cat === 'metales');
+    } else if (room.category === 'nometales') {
+      pool = valenciaDatabase.filter(item => item.cat === 'nometales');
+    }
+
+    // Seleccionar la cantidad de elementos pedida
+    const selected = [...pool].sort(() => 0.5 - Math.random()).slice(0, room.elementCount);
+    let deck = [];
+
+    selected.forEach((item, index) => {
+      deck.push({ id: `trio_${index}`, text: item.elem, type: 'elem' });
+      deck.push({ id: `trio_${index}`, text: item.sym, type: 'sym' });
+      deck.push({ id: `trio_${index}`, text: item.val, type: 'val' });
     });
-  });
 
-  // 2. UNIRSE A SALA
-  socket.on('unirse_sala', ({ codigoSala, nickname }) => {
-    const sala = salas[codigoSala];
-    if (!sala) return socket.emit('error_login', 'La sala no existe.');
-    if (sala.estado !== 'esperando') return socket.emit('error_login', 'El concurso ya está en marcha.');
+    // Mezclar cartas
+    room.deck = deck.sort(() => 0.5 - Math.random());
 
-    const nickLimpio = (nickname || '').trim();
-    if (!nickLimpio) return socket.emit('error_login', 'Debes ingresar un apodo válido.');
-
-    if (sala.jugadores.some(j => j.nickname.toLowerCase() === nickLimpio.toLowerCase())) {
-      return socket.emit('error_login', 'Ese apodo ya está en uso.');
-    }
-
-    sala.jugadores.push({ id: socket.id, nickname: nickLimpio });
-    sala.puntuaciones[socket.id] = { nickname: nickLimpio, puntos: 0, escudo: false };
-    sala.cartasVolteadasPorJugador[socket.id] = [];
-
-    socket.join(codigoSala);
-    socket.emit('unido_exitosamente', { codigoSala, nickname: nickLimpio });
-    io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
-  });
-
-  // 3. INICIAR CONCURSO
-  socket.on('iniciar_concurso', ({ codigoSala, nombreConcurso, duracionSegundos, cantidadElementos, incluirPoderes, familias }) => {
-    const sala = salas[codigoSala];
-    if (!sala) return socket.emit('error_juego', 'La sala no existe.');
-    if (sala.anfitrion !== socket.id) return socket.emit('error_juego', 'Permiso denegado.');
-
-    const familiasValidas = Array.isArray(familias) && familias.length > 0 ? familias : Object.keys(FAMILIAS_QUIMICA);
-    const limiteElementos = parseInt(cantidadElementos) || 8;
-
-    sala.configuracion.nombreConcurso = nombreConcurso || 'Torneo Química Pro';
-    sala.configuracion.duracionSegundos = parseInt(duracionSegundos) || 120;
-    sala.configuracion.cantidadElementos = limiteElementos;
-    sala.configuracion.incluirPoderes = Boolean(incluirPoderes);
-    sala.configuracion.familiasSeleccionadas = familiasValidas;
-
-    sala.tablero = generarTablero(familiasValidas, limiteElementos, sala.configuracion.incluirPoderes);
-    sala.estado = 'jugando';
-
-    io.to(codigoSala).emit('concurso_iniciado', {
-      tablero: sala.tablero,
-      puntuaciones: sala.puntuaciones,
-      nombreConcurso: sala.configuracion.nombreConcurso,
-      duracionSegundos: sala.configuracion.duracionSegundos
+    // Transmitir inicio a la sala
+    io.to(roomCode).emit('game_started', {
+      deck: room.deck,
+      duration: room.duration
     });
-  });
 
-  // 4. LÓGICA DE SELECCIÓN Y ACTIVACIÓN DE PODERES
-  socket.on('seleccionar_carta', ({ codigoSala, cartaId }) => {
-    const sala = salas[codigoSala];
-    if (!sala || sala.estado !== 'jugando') return;
+    // Temporizador
+    let timer = room.duration;
+    const interval = setInterval(() => {
+      timer--;
+      io.to(roomCode).emit('timer_tick', timer);
 
-    // Verificar si el jugador está bajo un delay del servidor
-    if (sala.bloqueadoHasta[socket.id] && Date.now() < sala.bloqueadoHasta[socket.id]) return;
-
-    if (!sala.cartasVolteadasPorJugador[socket.id]) {
-      sala.cartasVolteadasPorJugador[socket.id] = [];
-    }
-
-    const misVolteadas = sala.cartasVolteadasPorJugador[socket.id];
-    if (misVolteadas.length >= 3) return;
-
-    const carta = sala.tablero.find(c => c.id === cartaId);
-    if (!carta || carta.revelada || carta.emparejada) return;
-
-    // SI ES CARTA DE PODER ESECIAL
-    if (carta.tipo === 'PODER') {
-      carta.revelada = true;
-      carta.emparejada = true;
-      
-      ejecutarPoder(sala, socket.id, carta.subtipo, codigoSala);
-      
-      io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
-      io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
-      return;
-    }
-
-    // SI ES CARTA NORMAL DE QUÍMICA
-    carta.revelada = true;
-    misVolteadas.push(carta);
-
-    io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
-
-    if (misVolteadas.length === 3) {
-      const [c1, c2, c3] = misVolteadas;
-
-      const mismoGrupo = (c1.grupoId === c2.grupoId) && (c2.grupoId === c3.grupoId);
-      const tiposDiferentes = new Set([c1.tipo, c2.tipo, c3.tipo]).size === 3;
-
-      if (mismoGrupo && tiposDiferentes) {
-        c1.emparejada = true;
-        c2.emparejada = true;
-        c3.emparejada = true;
-
-        if (sala.puntuaciones[socket.id]) {
-          sala.puntuaciones[socket.id].puntos += 100;
-        }
-
-        sala.cartasVolteadasPorJugador[socket.id] = [];
-        io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
-        io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
-      } else {
-        sala.bloqueadoHasta[socket.id] = Date.now() + 1200;
-        setTimeout(() => {
-          c1.revelada = false;
-          c2.revelada = false;
-          c3.revelada = false;
-          sala.cartasVolteadasPorJugador[socket.id] = [];
-          io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
-        }, 1200);
+      if (timer <= 0) {
+        clearInterval(interval);
+        io.to(roomCode).emit('game_over', Object.values(room.players));
       }
+    }, 1000);
+  });
+
+  // Puntuación
+  socket.on('update_score', ({ roomCode, points }) => {
+    const room = rooms[roomCode];
+    if (room && room.players[socket.id]) {
+      room.players[socket.id].score += points;
+      io.to(roomCode).emit('update_leaderboard', Object.values(room.players).sort((a,b) => b.score - a.score));
     }
   });
 
+  // Evento Poder Tornado
+  socket.on('use_tornado', (roomCode) => {
+    io.to(roomCode).emit('apply_tornado');
+  });
+
+  // Desconexión
   socket.on('disconnect', () => {
-    Object.keys(salas).forEach(codigoSala => {
-      const sala = salas[codigoSala];
-      sala.jugadores = sala.jugadores.filter(j => j.id !== socket.id);
-      delete sala.puntuaciones[socket.id];
-      delete sala.cartasVolteadasPorJugador[socket.id];
-      delete sala.bloqueadoHasta[socket.id];
-
-      io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
-      io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
-
-      if (sala.jugadores.length === 0 && sala.anfitrion !== socket.id) {
-        delete salas[codigoSala];
+    for (const code in rooms) {
+      if (rooms[code].players[socket.id]) {
+        delete rooms[code].players[socket.id];
+        io.to(code).emit('update_player_list', Object.values(rooms[code].players));
+        io.to(code).emit('update_leaderboard', Object.values(rooms[code].players).sort((a,b) => b.score - a.score));
       }
-    });
+    }
   });
 });
 
-// MOTOR DE PODERES
-function ejecutarPoder(sala, jugadorId, subtipo, codigoSala) {
-  const jugador = sala.puntuaciones[jugadorId];
-  if (!jugador) return;
-
-  let eventoMsg = '';
-
-  switch (subtipo) {
-    case 'BOMBA':
-      // Voltea inmediatamente las cartas que el jugador tenía abiertas en fallo
-      if (sala.cartasVolteadasPorJugador[jugadorId]) {
-        sala.cartasVolteadasPorJugador[jugadorId].forEach(c => c.revelada = false);
-        sala.cartasVolteadasPorJugador[jugadorId] = [];
-      }
-      eventoMsg = `💣 ¡${jugador.nickname} detonó una BOMBA y limpió sus selección!`;
-      break;
-
-    case 'TORNADO':
-      // Baraja las cartas no reveladas en el tablero
-      const ocultas = sala.tablero.filter(c => !c.revelada && !c.emparejada);
-      for (let i = ocultas.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const tempContenido = ocultas[i].contenido;
-        const tempGrupo = ocultas[i].grupoId;
-        const tempTipo = ocultas[i].tipo;
-        const tempSubtipo = ocultas[i].subtipo;
-
-        ocultas[i].contenido = ocultas[j].contenido;
-        ocultas[i].grupoId = ocultas[j].grupoId;
-        ocultas[i].tipo = ocultas[j].tipo;
-        ocultas[i].subtipo = ocultas[j].subtipo;
-
-        ocultas[j].contenido = tempContenido;
-        ocultas[j].grupoId = tempGrupo;
-        ocultas[j].tipo = tempTipo;
-        ocultas[j].subtipo = tempSubtipo;
-      }
-      eventoMsg = `🌪️ ¡TORNADO! El tablero no revelado ha sido reorganizado.`;
-      break;
-
-    case 'ROBA_PUNTOS':
-      // Busca al líder y le roba 50 puntos
-      let liderId = null;
-      let maxPuntos = -1;
-
-      Object.keys(sala.puntuaciones).forEach(id => {
-        if (id !== jugadorId && sala.puntuaciones[id].puntos > maxPuntos) {
-          maxPuntos = sala.puntuaciones[id].puntos;
-          liderId = id;
-        }
-      });
-
-      if (liderId && maxPuntos > 0) {
-        const robo = Math.min(50, sala.puntuaciones[liderId].puntos);
-        sala.puntuaciones[liderId].puntos -= robo;
-        jugador.puntos += robo;
-        eventoMsg = `🥷 ¡${jugador.nickname} robó ${robo} pts a ${sala.puntuaciones[liderId].nickname}!`;
-      } else {
-        jugador.puntos += 50;
-        eventoMsg = `🥷 ¡${jugador.nickname} activó Roba Puntos y ganó 50 pts!`;
-      }
-      break;
-
-    case 'ESCUDO':
-      jugador.puntos += 150;
-      jugador.escudo = true;
-      eventoMsg = `🛡️ ¡${jugador.nickname} activó ESCUDO: +150 pts y protección!`;
-      break;
-  }
-
-  io.to(codigoSala).emit('notificacion_evento', { mensaje: eventoMsg });
-}
-
-function generarTablero(familiasPermitidas, limiteElementos, incluirPoderes) {
-  let poolElementos = [];
-
-  familiasPermitidas.forEach(fam => {
-    if (FAMILIAS_QUIMICA[fam]) {
-      poolElementos.push(...FAMILIAS_QUIMICA[fam]);
-    }
-  });
-
-  if (poolElementos.length === 0) poolElementos = FAMILIAS_QUIMICA.monovalentes;
-
-  poolElementos.sort(() => Math.random() - 0.5);
-  const seleccionados = poolElementos.slice(0, limiteElementos);
-
-  let cartas = [];
-  let cardId = 1;
-
-  seleccionados.forEach(elem => {
-    const grupoId = elem.nombre;
-    cartas.push({ id: cardId++, tipo: 'nombre', contenido: elem.nombre, grupoId, revelada: false, emparejada: false });
-    cartas.push({ id: cardId++, tipo: 'simbolo', contenido: elem.simbolo, grupoId, revelada: false, emparejada: false });
-    cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
-  });
-
-  // AGREGAR PODERES ESPECIALES SI ESTÁN ACTIVADOS
-  if (incluirPoderes) {
-    TIPOS_PODER.forEach(pod => {
-      cartas.push({
-        id: cardId++,
-        tipo: pod.tipo,
-        subtipo: pod.subtipo,
-        contenido: `${pod.icono} ${pod.subtipo}`,
-        grupoId: `PODER_${pod.subtipo}`,
-        revelada: false,
-        emparejada: false
-      });
-    });
-  }
-
-  // Mezclado determinista Fisher-Yates
-  for (let i = cartas.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cartas[i], cartas[j]] = [cartas[j], cartas[i]];
-  }
-
-  return cartas;
-}
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Engine Química Pro activo en http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Servidor activo en el puerto ${PORT}`));
