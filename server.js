@@ -104,7 +104,7 @@ io.on('connection', (socket) => {
     let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
     filteredPool.sort(() => 0.5 - Math.random());
 
-    const limit = parseInt(elementLimit) || 8;
+    const limit = parseInt(elementLimit) || filteredPool.length;
     const pool = filteredPool.slice(0, limit);
     
     rooms[roomCode] = {
