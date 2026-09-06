@@ -7,22 +7,23 @@ const seccionLogin = document.getElementById('seccion-login');
 const seccionLobby = document.getElementById('seccion-lobby');
 const seccionJuego = document.getElementById('seccion-juego');
 
-// Controles de Login y Creación
+// Controles de Login y Selección de Elementos
+const btnElementOpts = document.querySelectorAll('.btn-element-opt');
+const inputNumElementos = document.getElementById('select-num-elementos');
 const btnCrearSala = document.getElementById('btn-crear-sala');
-const selectNumElementos = document.getElementById('select-num-elementos');
 const btnUnirse = document.getElementById('btn-unirse');
 const inputNickname = document.getElementById('input-nickname');
 const inputCodigo = document.getElementById('input-codigo');
 const mensajeError = document.getElementById('mensaje-error');
 
-// Controles de Sala de Espera (Lobby)
+// Controles del Lobby
 const lobbyCodigoDisplay = document.getElementById('lobby-codigo-display');
 const listaJugadores = document.getElementById('lista-jugadores');
 const panelAnfitrionControles = document.getElementById('panel-anfitrion-controles');
 const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
 const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
 
-// Controles del Juego en Vivo
+// Controles del Juego
 const juegoCodigoDisplay = document.getElementById('juego-codigo-display');
 const leaderboard = document.getElementById('leaderboard');
 const tableroCartas = document.getElementById('tablero-cartas');
@@ -33,54 +34,60 @@ let esAnfitrion = false;
 let bloqueado = false;
 
 // ==========================================
-// 1. CREAR SALA (ANFITRIÓN CON SELECCIÓN)
+// SELECCIÓN VISUAL DE ELEMENTOS (4, 8, 12, 16)
+// ==========================================
+btnElementOpts.forEach(btn => {
+  btn.addEventListener('click', () => {
+    btnElementOpts.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    inputNumElementos.value = btn.dataset.val;
+  });
+});
+
+// ==========================================
+// 1. CREAR SALA (ANFITRIÓN)
 // ==========================================
 btnCrearSala.addEventListener('click', () => {
-  // Captura la cantidad de elementos seleccionada por el anfitrión
-  const numElementos = parseInt(selectNumElementos.value, 10) || 8;
+  const numElementos = parseInt(inputNumElementos.value, 10) || 8;
   socket.emit('crear_sala', { numElementos });
 });
 
-socket.on('sala_creada', ({ codigoSala, numElementos }) => {
+socket.on('sala_creada', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = true;
 
-  // Transición a la Sala de Espera
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
-  // Mostrar panel de control del anfitrión y ocultar mensaje de espera de alumno
   panelAnfitrionControles.classList.remove('hidden');
   pantallaEsperaConcursante.classList.add('hidden');
   mensajeError.textContent = '';
 });
 
 // ==========================================
-// 2. UNIRSE A SALA Y PANTALLA DE ESPERA (CONCURSANTE)
+// 2. UNIRSE A SALA (CONCURSANTE)
 // ==========================================
 btnUnirse.addEventListener('click', () => {
   const nickname = inputNickname.value.trim();
   const codigoSala = inputCodigo.value.trim().toUpperCase();
 
   if (!nickname || !codigoSala) {
-    mensajeError.textContent = 'Por favor ingresa tu apodo y el código de la sala.';
+    mensajeError.textContent = 'Ingresa apodo y código de sala.';
     return;
   }
 
   socket.emit('unirse_sala', { codigoSala, nickname });
 });
 
-socket.on('unido_exitosamente', ({ codigoSala, nickname }) => {
+socket.on('unido_exitosamente', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = false;
 
-  // Transición a la Sala de Espera del Concursante
   seccionLogin.classList.add('hidden');
   seccionLobby.classList.remove('hidden');
   lobbyCodigoDisplay.textContent = codigoSala;
 
-  // Ocultar controles de anfitrión y mostrar pantalla de espera del concursante
   panelAnfitrionControles.classList.add('hidden');
   pantallaEsperaConcursante.classList.remove('hidden');
   mensajeError.textContent = '';
@@ -91,7 +98,7 @@ socket.on('error_login', (msg) => {
 });
 
 // ==========================================
-// 3. LISTA DE ESPERA EN TIEMPO REAL
+// 3. ACTUALIZACIÓN DE LOBBY EN TIEMPO REAL
 // ==========================================
 socket.on('actualizar_lista_espera', ({ jugadores }) => {
   listaJugadores.innerHTML = '';
@@ -104,7 +111,7 @@ socket.on('actualizar_lista_espera', ({ jugadores }) => {
 });
 
 // ==========================================
-// 4. INICIAR CONCURSO (SOLO ANFITRIÓN)
+// 4. INICIAR CONCURSO
 // ==========================================
 btnIniciarConcurso.addEventListener('click', () => {
   if (miCodigoSala && esAnfitrion) {
@@ -113,7 +120,6 @@ btnIniciarConcurso.addEventListener('click', () => {
 });
 
 socket.on('concurso_iniciado', ({ tablero, puntuaciones }) => {
-  // Transición de la Sala de Espera al Tablero de Juego
   seccionLobby.classList.add('hidden');
   seccionJuego.classList.remove('hidden');
   juegoCodigoDisplay.textContent = miCodigoSala;
@@ -127,7 +133,7 @@ socket.on('error_inicio', (msg) => {
 });
 
 // ==========================================
-// 5. TABLERO DE CARTAS Y PODERES
+// 5. RENDERIZADO DEL TABLERO
 // ==========================================
 function renderizarTablero(cartas) {
   tableroCartas.innerHTML = '';
@@ -137,8 +143,6 @@ function renderizarTablero(cartas) {
     cardEl.className = 'carta';
     if (carta.revelada) cardEl.classList.add('revelada');
     if (carta.emparejada) cardEl.classList.add('emparejada');
-
-    cardEl.dataset.id = carta.id;
 
     if (carta.revelada || carta.emparejada) {
       cardEl.innerHTML = `
@@ -160,33 +164,8 @@ function renderizarTablero(cartas) {
   });
 }
 
-socket.on('actualizar_tablero', ({ tablero, estadoJugada }) => {
+socket.on('actualizar_tablero', ({ tablero }) => {
   renderizarTablero(tablero);
-
-  if (estadoJugada === 'evaluando') {
-    bloqueado = true;
-  } else if (estadoJugada === 'exito') {
-    bloqueado = false;
-  } else if (estadoJugada === 'fallo') {
-    bloqueado = true;
-    setTimeout(() => {
-      bloqueado = false;
-      socket.emit('ocultar_no_coincidentes', { codigoSala: miCodigoSala });
-    }, 1500);
-  } else {
-    bloqueado = false;
-  }
-});
-
-socket.on('efecto_poder', ({ tipoPoder, mensaje }) => {
-  const alerta = document.createElement('div');
-  alerta.className = `alerta-poder ${tipoPoder}`;
-  alerta.textContent = mensaje;
-  document.body.appendChild(alerta);
-
-  setTimeout(() => {
-    alerta.remove();
-  }, 3000);
 });
 
 socket.on('actualizar_puntuaciones', ({ puntuaciones }) => {
@@ -204,7 +183,3 @@ function actualizarLeaderboard(puntuaciones) {
     leaderboard.appendChild(item);
   });
 }
-
-socket.on('fin_juego', ({ ganador }) => {
-  alert(`🏆 ¡FIN DEL CONCURSO! 🏆\nEl ganador es: ${ganador.nickname} con ${ganador.puntos} puntos.`);
-});
