@@ -3,68 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Explosión Química - Concurso</title>
+  <title>Explosión Química - eSports Chemistry</title>
   <link rel="stylesheet" href="styles.css">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div id="app">
-    <h1>EXPLOSIÓN QUÍMICA 💥</h1>
+  <div class="background-overlay"></div>
 
-    <!-- PANTALLA INICIAL: CREAR / UNIRSE -->
-    <div id="seccion-login" class="panel">
-      <div class="bloque-anfitrion">
-        <h3>Panel del Anfitrión</h3>
-        <label for="num-elementos">Cantidad de Elementos Químicos:</label>
-        <select id="num-elementos">
-          <option value="4">4 Elementos (12 cartas + poderes)</option>
-          <option value="6">6 Elementos (18 cartas + poderes)</option>
-          <option value="8" selected>8 Elementos (24 cartas + poderes)</option>
-          <option value="10">10 Elementos (30 cartas + poderes)</option>
-          <option value="12">12 Elementos (36 cartas + poderes)</option>
-        </select>
-        <button id="btn-crear-sala">Crear Concurso</button>
+  <main class="main-container">
+    <header class="app-header">
+      <h1 class="logo">EXPLOSIÓN <span class="highlight">QUÍMICA</span> 💥</h1>
+    </header>
+
+    <!-- 1. LOGIN / CREACIÓN -->
+    <section id="seccion-login" class="panel-card">
+      <div class="grid-login">
+        <!-- BLOQUE ANFITRIÓN -->
+        <div class="sub-panel host-panel">
+          <h2>👑 ANFITRIÓN</h2>
+          <p class="panel-desc">Configura y crea un nuevo concurso</p>
+          
+          <div class="input-group">
+            <label for="select-num-elementos">Elementos Químicos:</label>
+            <select id="select-num-elementos" class="custom-select">
+              <option value="4">4 Elementos (12 cartas + poderes)</option>
+              <option value="6">6 Elementos (18 cartas + poderes)</option>
+              <option value="8" selected>8 Elementos (24 cartas + poderes)</option>
+              <option value="10">10 Elementos (30 cartas + poderes)</option>
+              <option value="12">12 Elementos (36 cartas + poderes)</option>
+              <option value="16">16 Elementos (48 cartas + poderes)</option>
+            </select>
+          </div>
+
+          <button id="btn-crear-sala" class="btn btn-primary">Crear Concurso</button>
+        </div>
+
+        <div class="divider"><span>O</span></div>
+
+        <!-- BLOQUE JUGADOR -->
+        <div class="sub-panel player-panel">
+          <h2>🎮 CONCURSANTE</h2>
+          <p class="panel-desc">Ingresa tus datos para participar</p>
+
+          <div class="input-group">
+            <input type="text" id="input-nickname" placeholder="Tu Nombre / Apodo" maxlength="15" autocomplete="off">
+          </div>
+
+          <div class="input-group">
+            <input type="text" id="input-codigo" placeholder="Código de Sala (6 dígitos)" maxlength="6" autocomplete="off">
+          </div>
+
+          <button id="btn-unirse" class="btn btn-secondary">Entrar al Concurso</button>
+        </div>
       </div>
 
-      <hr>
+      <p id="mensaje-error" class="error-msg"></p>
+    </section>
 
-      <div class="bloque-jugador">
-        <h3>Unirse como Concursante</h3>
-        <input type="text" id="input-nickname" placeholder="Tu Apodo / Nombre" maxlength="15">
-        <input type="text" id="input-codigo" placeholder="Código de Sala">
-        <button id="btn-unirse">Entrar al Concurso</button>
+    <!-- 2. SALA DE ESPERA (LOBBY) -->
+    <section id="seccion-lobby" class="panel-card hidden">
+      <div class="lobby-header">
+        <h2>SALA DE ESPERA</h2>
+        <div class="room-code-badge">
+          <span>CÓDIGO DE SALA:</span>
+          <strong id="lobby-codigo-display">------</strong>
+        </div>
       </div>
 
-      <p id="mensaje-error" class="error"></p>
-    </div>
-
-    <!-- SALA DE ESPERA (LOBBY) -->
-    <div id="seccion-lobby" class="panel hidden">
-      <h2>SALA DE ESPERA</h2>
-      <p>Código de la Sala: <strong id="lobby-codigo-display">------</strong></p>
-
-      <div class="lista-jugadores-contenedor">
-        <h3>Concursantes Conectados:</h3>
-        <ul id="lista-jugadores"></ul>
+      <div class="lobby-content">
+        <h3>CONCURSANTES CONECTADOS</h3>
+        <ul id="lista-jugadores" class="players-grid"></ul>
       </div>
 
-      <!-- Solo visible para el anfitrión -->
-      <div id="panel-anfitrion-controles" class="hidden">
-        <button id="btn-iniciar-concurso" class="btn-destacado">🚀 ¡INICIAR CONCURSO AHÓRA!</button>
-      </div>
-      <p id="esperando-mensaje" class="info-espera">Esperando a que el anfitrión inicie la partida...</p>
-    </div>
-
-    <!-- PANTALLA DEL JUEGO -->
-    <div id="seccion-juego" class="panel hidden">
-      <div class="header-juego">
-        <div>Código: <span id="juego-codigo-display"></span></div>
-        <div id="leaderboard"></div>
+      <!-- VISTA ANFITRIÓN -->
+      <div id="panel-anfitrion-controles" class="lobby-actions hidden">
+        <button id="btn-iniciar-concurso" class="btn btn-action glow">🚀 ¡INICIAR CONCURSO AHORA!</button>
       </div>
 
-      <div id="tablero-cartas" class="grid-tablero"></div>
-    </div>
-  </div>
+      <!-- VISTA CONCURSANTE -->
+      <div id="pantalla-espera-concursante" class="waiting-banner hidden">
+        <div class="spinner"></div>
+        <p>Esperando a que el anfitrión inicie el juego...</p>
+      </div>
+    </section>
+
+    <!-- 3. TABLERO DE JUEGO -->
+    <section id="seccion-juego" class="panel-card hidden">
+      <div class="game-header">
+        <div class="game-info">SALA: <span id="juego-codigo-display">------</span></div>
+        <div id="leaderboard" class="leaderboard-bar"></div>
+      </div>
+
+      <div id="tablero-cartas" class="board-grid"></div>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>
