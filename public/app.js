@@ -1,6 +1,6 @@
 const socket = io();
 
-// SISTEMA DE AUDIO SINTETIZADO CON WEB AUDIO API
+// AUDIO SINTETIZADO WEB AUDIO API (EFECTOS DE SONIDO SIN MP3)
 const AudioFX = {
   ctx: null,
   init() {
@@ -55,70 +55,23 @@ const AudioFX = {
   }
 };
 
-// BASE DE DATOS COMPLETA DE ELEMENTOS QUÍMICOS Y SUS VALENCIAS
+// BASE DE DATOS DE ELEMENTOS Y VALENCIAS
 const ELEMENT_DATABASE = [
-  // --- METALES DE VALENCIA FIJA ---
   { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
   { cat: 'mono_fixed', name: 'Litio', symbol: 'Li', val: '+1' },
   { cat: 'mono_fixed', name: 'Sodio', symbol: 'Na', val: '+1' },
   { cat: 'mono_fixed', name: 'Potasio', symbol: 'K', val: '+1' },
-  { cat: 'mono_fixed', name: 'Rubidio', symbol: 'Rb', val: '+1' },
-  { cat: 'mono_fixed', name: 'Cesio', symbol: 'Cs', val: '+1' },
-  { cat: 'mono_fixed', name: 'Francio', symbol: 'Fr', val: '+1' },
   { cat: 'mono_fixed', name: 'Plata', symbol: 'Ag', val: '+1' },
-  { cat: 'mono_fixed', name: 'Amonio', symbol: 'NH4', val: '+1' },
-
-  { cat: 'di_fixed', name: 'Berilio', symbol: 'Be', val: '+2' },
-  { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
   { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
-  { cat: 'di_fixed', name: 'Estroncio', symbol: 'Sr', val: '+2' },
-  { cat: 'di_fixed', name: 'Bario', symbol: 'Ba', val: '+2' },
-  { cat: 'di_fixed', name: 'Radio', symbol: 'Ra', val: '+2' },
+  { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
   { cat: 'di_fixed', name: 'Zinc', symbol: 'Zn', val: '+2' },
-  { cat: 'di_fixed', name: 'Cadmio', symbol: 'Cd', val: '+2' },
-
   { cat: 'tri_fixed', name: 'Aluminio', symbol: 'Al', val: '+3' },
-  { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
-  { cat: 'tri_fixed', name: 'Galio', symbol: 'Ga', val: '+3' },
-  { cat: 'tri_fixed', name: 'Indio', symbol: 'In', val: '+3' },
-
-  { cat: 'tri_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
-  { cat: 'tri_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
-  { cat: 'tri_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
-
-  // --- METALES DE VALENCIA VARIABLE ---
   { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
-  { cat: 'variable', name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
-  { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
-  { cat: 'variable', name: 'Talio', symbol: 'Tl', val: '+1, +3' },
   { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
-  { cat: 'variable', name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
-  { cat: 'variable', name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
-  { cat: 'variable', name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
-  { cat: 'variable', name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
-  { cat: 'variable', name: 'Platino', symbol: 'Pt', val: '+2, +4' },
-  { cat: 'variable', name: 'Antimonio', symbol: 'Sb', val: '+3, +5' },
-
-  // --- NO METALES ---
+  { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
   { cat: 'nometal', name: 'Flúor', symbol: 'F', val: '-1' },
   { cat: 'nometal', name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Bromo', symbol: 'Br', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' },
-  { cat: 'nometal', name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Selenio', symbol: 'Se', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Teluro', symbol: 'Te', val: '-2, +2, +4, +6' },
-  { cat: 'nometal', name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
-  { cat: 'nometal', name: 'Fósforo', symbol: 'P', val: '-3, +1, +3, +5' },
-  { cat: 'nometal', name: 'Arsénico', symbol: 'As', val: '-3, +3, +5' },
-  { cat: 'nometal', name: 'Carbono', symbol: 'C', val: '-4, +2, +4' },
-  { cat: 'nometal', name: 'Silicio', symbol: 'Si', val: '-4, +4' },
-  { cat: 'nometal', name: 'Boro', symbol: 'B', val: '-3, +3' },
-
-  // --- ANFÓTEROS ---
-  { cat: 'anfotero', name: 'Manganeso', symbol: 'Mn', val: '+2, +3, +4, +6, +7' },
-  { cat: 'anfotero', name: 'Cromo', symbol: 'Cr', val: '+2, +3, +6' },
-  { cat: 'anfotero', name: 'Vanadio', symbol: 'V', val: '+2, +3, +4, +5' }
+  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' }
 ];
 
 let salaActual = null;
@@ -177,16 +130,11 @@ socket.on('roomCreated', ({ roomId }) => {
 socket.on('playerJoined', ({ players }) => {
   const lista = document.getElementById('lista-jugadores-host');
   if (lista) {
-    lista.className = 'players-waiting-grid';
-    lista.innerHTML = players.map(p => {
-      const initial = p.name ? p.name.charAt(0).toUpperCase() : '?';
-      return `
-        <div class="player-card-lobby">
-          <div class="player-avatar">${initial}</div>
-          <div style="font-weight:700; font-size:0.9rem">${p.name}</div>
-        </div>
-      `;
-    }).join('');
+    lista.innerHTML = players.map(p => `
+      <div style="background:rgba(255,255,255,0.05); padding:10px 16px; border-radius:12px; font-weight:800; border:1px solid rgba(255,255,255,0.1)">
+        👤 ${p.name}
+      </div>
+    `).join('');
   }
   actualizarTablaRanking(players);
 });
@@ -215,13 +163,13 @@ socket.on('rankingUpdate', ({ players }) => actualizarTablaRanking(players));
 
 socket.on('gameOver', ({ players }) => {
   actualizarTablaRanking(players);
-  document.getElementById('titulo-ranking').innerText = "¡PARTIDA FINALIZADA!";
+  document.getElementById('titulo-ranking').innerText = "🏆 RESULTADOS FINALES 🏆";
   mostrarSeccion('pantalla-ranking');
 });
 
 socket.on('errorMsg', (msg) => alert(msg));
 
-// RENDERIZADO TABLERO
+// RENDERIZADO DEL TABLERO
 function renderBoard(deck) {
   const boardEl = document.getElementById('tablero');
   boardEl.innerHTML = '';
@@ -241,7 +189,7 @@ function renderBoard(deck) {
 
     cardEl.innerHTML = `
       <div class="symbol">?</div>
-      <div class="type-tag">TAP</div>
+      <div class="type-tag">TOCAR</div>
     `;
 
     cardEl.addEventListener('click', () => handleCardClick(cardEl, cardData, idx));
@@ -265,8 +213,20 @@ function handleCardClick(cardEl, cardData, idx) {
   }
 
   cardEl.classList.add('flipped');
-  cardEl.querySelector('.symbol').innerText = cardData.content;
-  cardEl.querySelector('.type-tag').innerText = cardData.sub || '';
+  
+  // ETIQUETAS CLARAS PARA QUE NO ESTÉ AL REVÉS
+  let tagTexto = 'CARTA';
+  let textoMostrado = cardData.content;
+
+  if (cardData.type === 'symbol') tagTexto = 'SÍMBOLO';
+  if (cardData.type === 'name') tagTexto = 'NOMBRE';
+  if (cardData.type === 'valence') {
+    tagTexto = 'VALENCIA';
+    textoMostrado = `VAL: ${cardData.content}`; // Muestra claramente la valencia
+  }
+
+  cardEl.querySelector('.symbol').innerText = textoMostrado;
+  cardEl.querySelector('.type-tag').innerText = tagTexto;
 
   flippedCards.push({ element: cardEl, data: cardData });
 
@@ -322,7 +282,7 @@ function checkTrioMatch() {
       flippedCards.forEach(c => {
         c.element.classList.remove('flipped');
         c.element.querySelector('.symbol').innerText = '?';
-        c.element.querySelector('.type-tag').innerText = 'TAP';
+        c.element.querySelector('.type-tag').innerText = 'TOCAR';
       });
       flippedCards = [];
     }, 800);
@@ -351,8 +311,8 @@ function activarBomba(index) {
       const data = currentDeck[i];
       if (data) {
         allCards[i].classList.add('flipped');
-        allCards[i].querySelector('.symbol').innerText = data.content;
-        allCards[i].querySelector('.type-tag').innerText = data.sub || '';
+        allCards[i].querySelector('.symbol').innerText = data.type === 'valence' ? `VAL: ${data.content}` : data.content;
+        allCards[i].querySelector('.type-tag').innerText = data.type.toUpperCase();
       }
     }
   });
@@ -362,7 +322,7 @@ function activarBomba(index) {
       if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
         allCards[i].classList.remove('flipped');
         allCards[i].querySelector('.symbol').innerText = '?';
-        allCards[i].querySelector('.type-tag').innerText = 'TAP';
+        allCards[i].querySelector('.type-tag').innerText = 'TOCAR';
       }
     });
   }, 2500);
@@ -379,7 +339,7 @@ function activarTornado(index) {
   flippedCards.forEach(c => {
     c.element.classList.remove('flipped');
     c.element.querySelector('.symbol').innerText = '?';
-    c.element.querySelector('.type-tag').innerText = 'TAP';
+    c.element.querySelector('.type-tag').innerText = 'TOCAR';
   });
   flippedCards = [];
 
@@ -397,6 +357,7 @@ function activarTornado(index) {
   }, 400);
 }
 
+// RANKING LEADERBOARD PRO
 function actualizarTablaRanking(players) {
   const container = document.getElementById('tabla-ranking');
   if (!container) return;
@@ -413,11 +374,11 @@ function actualizarTablaRanking(players) {
 
     return `
       <div class="ranking-card ${topClass}">
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div class="rank-left">
           <div class="rank-badge">${medal}</div>
           <div>
-            <div style="font-weight:800; font-size:1.05rem">${p.name}</div>
-            <div style="font-size:0.7rem; color:var(--text-muted)">Puesto ${pos}</div>
+            <div class="rank-name">${p.name}</div>
+            <div class="rank-sub">PUESTO ${pos}</div>
           </div>
         </div>
         <div class="rank-score-pill">${p.points} PTS</div>
