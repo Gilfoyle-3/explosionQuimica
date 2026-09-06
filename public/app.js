@@ -1,9 +1,9 @@
 const socket = io();
 
 let currentRoomCode = null;
+let mySocketId = null;
 let myScore = 0;
 let flippedCards = [];
-let isBombMode = false;
 let isProcessing = false;
 
 function switchView(viewId) {
@@ -11,14 +11,26 @@ function switchView(viewId) {
   document.getElementById(viewId).classList.add('active');
 }
 
-// CREADOR: Crear la sala desde la pantalla de configuración
+function toggleSelectAll(master) {
+  document.querySelectorAll('.cat-item').forEach(cb => cb.checked = master.checked);
+}
+
+// CREADOR: Crear sala
 function handleCreateRoom() {
-  const title = document.getElementById('create-title').value.trim() || "Concurso de Química";
-  const category = document.getElementById('create-category').value;
+  const title = document.getElementById('create-title').value.trim() || "Concurso Química";
   const duration = document.getElementById('create-duration').value;
   const elementCount = document.getElementById('create-elements').value;
 
-  socket.emit('create_room', { title, duration, elementCount, category });
+  const categories = [];
+  if (document.getElementById('cat-todos').checked) {
+    categories.push('todos');
+  } else {
+    document.querySelectorAll('.cat-item:checked').forEach(cb => categories.push(cb.value));
+  }
+
+  if (categories.length === 0) return alert("Selecciona al menos una familia.");
+
+  socket.emit('create_room', { title, duration, elementCount, categories });
 }
 
 socket.on('room_created', ({ roomCode }) => {
@@ -32,25 +44,57 @@ function handleJoinRoom() {
   const name = document.getElementById('join-name').value.trim();
   const roomCode = document.getElementById('join-code').value.trim();
 
-  if (!name || !roomCode) return alert("Por favor ingresa tu nombre y el código.");
+  if (!name || !roomCode) return alert("Ingresa tu nombre y el código.");
 
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
 }
 
-socket.on('joined_waiting_room', () => {
+socket.on('joined_waiting_room', ({ id }) => {
+  mySocketId = id;
   switchView('view-player-waiting');
 });
 
 socket.on('error_message', (msg) => alert(msg));
 
+// FUNCION CORE PARA DIBUJAR EL RANKING
+function renderLeaderboard(players, targetListId, targetCountId) {
+  const list = document.getElementById(targetListId);
+  const count = document.getElementById(targetCountId);
+
+  if (count) count.innerText = `${players.length} Jugadores`;
+  if (!list) return;
+
+  list.innerHTML = players.map((p, index) => {
+    const rank = index + 1;
+    let medal = `#${rank}`;
+    let rankClass = '';
+
+    if (rank === 1) { medal = '🥇'; rankClass = 'rank-1'; }
+    else if (rank === 2) { medal = '🥈'; rankClass = 'rank-2'; }
+    else if (rank === 3) { medal = '🥉'; rankClass = 'rank-3'; }
+
+    const isMe = p.id === mySocketId ? 'is-me' : '';
+
+    return `
+      <li class="player-row ${rankClass} ${isMe}">
+        <div class="player-info">
+          <span class="player-rank">${medal}</span>
+          <span class="player-name">${p.name} ${p.id === mySocketId ? '(Tú)' : ''}</span>
+        </div>
+        <span class="player-score">${p.score} pts</span>
+      </li>
+    `;
+  }).join('');
+}
+
 socket.on('update_player_list', (players) => {
-  const list = document.getElementById('host-player-list');
-  const count = document.getElementById('player-count');
-  if (list && count) {
-    count.innerText = players.length;
-    list.innerHTML = players.map(p => `<li>👤 ${p.name}</li>`).join('');
-  }
+  renderLeaderboard(players, 'host-player-list', 'player-count');
+});
+
+socket.on('update_leaderboard', (players) => {
+  renderLeaderboard(players, 'host-live-leaderboard', 'host-count');
+  renderLeaderboard(players, 'player-live-leaderboard', 'game-player-count');
 });
 
 function handleStartGame() {
@@ -66,6 +110,7 @@ socket.on('game_started', ({ deck }) => {
   }
 });
 
+// TABLERO Y PODERES
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
   grid.innerHTML = '';
@@ -76,6 +121,9 @@ function renderBoard(deck) {
     el.dataset.index = index;
     el.dataset.trioId = card.id;
     el.dataset.text = card.text;
+    el.dataset.isPower = card.isPower ? "true" : "false";
+    if (card.isPower) el.dataset.powerType = card.powerType;
+
     el.innerText = '?';
     el.onclick = () => handleCardClick(el, index);
     grid.appendChild(el);
@@ -85,13 +133,26 @@ function renderBoard(deck) {
 function handleCardClick(cardEl, index) {
   if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
-  if (isBombMode) {
-    executeBombEffect(index);
-    isBombMode = false;
-    document.getElementById('btn-bomba').style.background = 'var(--accent-red)';
+  // CARTA ESPECIAL DE PODER
+  if (cardEl.dataset.isPower === "true") {
+    cardEl.classList.add('flipped', 'power-card');
+    cardEl.innerText = cardEl.dataset.text;
+
+    setTimeout(() => {
+      if (cardEl.dataset.powerType === 'tornado') {
+        alert("🌪️ ¡TORNADO! Se reordenan todas las cartas no resueltas.");
+        socket.emit('trigger_global_tornado', currentRoomCode);
+      } else if (cardEl.dataset.powerType === 'bomba') {
+        alert("💣 ¡BOMBA! Revelando área 3x3 por 2 segundos.");
+        executeBombEffect(index);
+      }
+      cardEl.classList.add('matched');
+    }, 400);
+
     return;
   }
 
+  // TRIOS REGULARES
   cardEl.classList.add('flipped');
   cardEl.innerText = cardEl.dataset.text;
   flippedCards.push(cardEl);
@@ -122,17 +183,13 @@ function checkTrio() {
         c.innerText = '?';
       });
       resetTurn();
-    }, 1000);
+    }, 900);
   }
 }
 
 function resetTurn() {
   flippedCards = [];
   isProcessing = false;
-}
-
-function triggerTornado() {
-  socket.emit('use_tornado', currentRoomCode);
 }
 
 socket.on('apply_tornado', () => {
@@ -144,15 +201,9 @@ socket.on('apply_tornado', () => {
   cards.forEach(c => grid.appendChild(c));
 });
 
-function armBombMode() {
-  isBombMode = true;
-  alert("💣 Bomba lista: Selecciona una carta para revelar un área de 3x3 por 2 segundos.");
-  document.getElementById('btn-bomba').style.background = 'var(--accent-gold)';
-}
-
 function executeBombEffect(centerIndex) {
   const allCards = Array.from(document.querySelectorAll('.card'));
-  const columns = 4;
+  const columns = window.innerWidth <= 768 ? 3 : 4;
 
   const row = Math.floor(centerIndex / columns);
   const col = centerIndex % columns;
@@ -186,17 +237,6 @@ socket.on('timer_tick', (seconds) => {
   if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
 });
 
-socket.on('update_leaderboard', (players) => {
-  const renderList = (elId) => {
-    const el = document.getElementById(elId);
-    if (el) {
-      el.innerHTML = players.map((p, i) => `<li><span>#${i+1} ${p.name}</span><strong>${p.score} pts</strong></li>`).join('');
-    }
-  };
-  renderList('host-live-leaderboard');
-  renderList('player-live-leaderboard');
-});
-
-socket.on('game_over', () => {
-  alert("⌛ ¡El tiempo ha terminado!");
+socket.on('game_over', (finalPlayers) => {
+  alert("⌛ ¡El tiempo del concurso ha terminado!");
 });
