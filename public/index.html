@@ -37,11 +37,11 @@
           📜 Reglas del Juego
         </div>
         <ul style="color: var(--text-main); font-size:0.85rem; line-height:1.5; padding-left:18px; display:flex; flex-direction:column; gap:8px;">
-          <li><b>Estructura de Tríos:</b> Debes voltear 3 cartas para formar un trío válido compuesto por <b>Símbolo + Nombre + Valencia correcta</b>.</li>
-          <li><b>Puntuación:</b> Cada trío correcto te otorga <b>+100 Puntos</b>.</li>
-          <li><b>Power-Up Bomba (💣):</b> Revela momentáneamente las cartas adyacentes.</li>
-          <li><b>Power-Up Tornado (🌪️):</b> Mezcla todas las cartas del tablero que aún no han sido emparejadas.</li>
-          <li><b>Ganador:</b> El jugador con más puntos al finalizar el tiempo gana la partida.</li>
+          <li><b>Estructura de Tríos:</b> Voltea 3 cartas para formar un trío: <b>Símbolo + Nombre + Valencia</b>.</li>
+          <li><b>Puntuación:</b> Cada trío correcto suma <b>+100 Puntos</b>.</li>
+          <li><b>Power-Up Bomba (💣):</b> Revela momentáneamente las cartas vecinas y luego desaparece.</li>
+          <li><b>Power-Up Tornado (🌪️):</b> Mezcla todas las cartas no adivinadas en el tablero.</li>
+          <li><b>Ganador:</b> El jugador con más puntos al acabarse el tiempo.</li>
         </ul>
       </div>
     </div>
@@ -53,15 +53,18 @@
         <input type="text" id="nombreConcurso" placeholder="Nombre del Torneo">
         <input type="number" id="tiempoConcurso" placeholder="Tiempo en Segundos (ej: 60)" value="60">
 
-        <!-- SELECTOR DE CATEGORÍAS -->
-        <div style="margin-top: 10px;">
-          <div style="font-weight:800; color:var(--neon-gold); font-size:0.9rem; margin-bottom:8px; text-transform:uppercase;">
-            Seleccionar Categorías:
+        <!-- SELECTOR DETALLADO DE CATEGORÍAS DE LA TABLA -->
+        <div style="margin-top: 6px;">
+          <div style="font-weight:800; color:var(--neon-gold); font-size:0.85rem; margin-bottom:8px; text-transform:uppercase;">
+            Seleccionar Grupos de Valencias:
           </div>
           <div class="checkbox-group">
-            <label><input type="checkbox" value="fixed" checked> Metales Valencia Fija</label>
+            <label><input type="checkbox" value="mono_fixed" checked> Monovalentes (+1)</label>
+            <label><input type="checkbox" value="di_fixed" checked> Divalentes (+2)</label>
+            <label><input type="checkbox" value="tri_fixed" checked> Trivalentes (+3)</label>
+            <label><input type="checkbox" value="poly_fixed" checked> Tetra/Hexavalentes (+4, +6)</label>
             <label><input type="checkbox" value="variable" checked> Metales Valencia Variable</label>
-            <label><input type="checkbox" value="nometal" checked> No Metales</label>
+            <label><input type="checkbox" value="nometal" checked> No Metales (Anfígenos, Halógenos, etc.)</label>
           </div>
         </div>
 
