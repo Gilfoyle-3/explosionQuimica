@@ -3,20 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Química Pro - Concurso de Valencias</title>
+  <title>Química Pro Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <div class="glass-panel">
-  <!-- VISTA 1: INICIO -->
+  <!-- BANNER EVENTOS -->
+  <div id="banner-evento" class="event-banner oculto"></div>
+
+  <!-- VISTA 1: CONFIGURACIÓN E INGRESO -->
   <div id="vista-inicio">
-    <h1>⚛️ Química Pro</h1>
+    <h1>⚛️ Química Pro Engine</h1>
     <div class="grid-container">
       <div>
-        <h2>Crear Concurso</h2>
-        <button class="btn" onclick="crearSala()">✨ Crear Nueva Sala</button>
+        <h2>Crear Sala</h2>
+        <button class="btn" onclick="crearSala()">✨ Crear Concurso</button>
       </div>
       <div>
         <h2>Unirse a Juego</h2>
@@ -28,20 +31,20 @@
           <label>Tu Apodo</label>
           <input type="text" id="input-nickname" placeholder="Ej: ProfeQuimico">
         </div>
-        <button class="btn" style="background: linear-gradient(90deg, #10b981, #059669);" onclick="unirseSala()">🚀 Entrar a Sala</button>
+        <button class="btn btn-green" onclick="unirseSala()">🚀 Entrar a Sala</button>
       </div>
     </div>
   </div>
 
-  <!-- VISTA 2: SALA DE ESPERA -->
+  <!-- VISTA 2: LOBBY DE ESPERA -->
   <div id="vista-lobby" class="oculto">
-    <h2>Sala de Espera: <span id="lbl-codigo" style="color: var(--accent-neon);">------</span></h2>
-    <p style="text-align:center; color:#94a3b8; margin-bottom: 20px;">Comparte este código con los concursantes</p>
+    <h2>Sala: <span id="lbl-codigo" class="text-neon">------</span></h2>
+    <p class="subtitle">Comparte el código con tus alumnos o participantes</p>
 
     <div class="grid-container">
       <div id="panel-configuracion">
         <h3>⚙️ Ajustes del Juego</h3>
-        <div class="input-group" style="margin-top:10px;">
+        <div class="input-group">
           <label>Nombre del Concurso</label>
           <input type="text" id="cfg-nombre" value="Gran Torneo Química">
         </div>
@@ -55,8 +58,12 @@
             <option value="4">4 Elementos (12 Cartas)</option>
             <option value="8" selected>8 Elementos (24 Cartas)</option>
             <option value="12">12 Elementos (36 Cartas)</option>
-            <option value="16">16 Elementos (48 Cartas)</option>
           </select>
+        </div>
+        <div class="input-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="cfg-poderes" checked> ⚡ Incluir Cartas de Poder (Bomba, Tornado, etc.)
+          </label>
         </div>
         <div class="input-group">
           <label>Familias Permitidas</label>
@@ -67,23 +74,23 @@
 
       <div>
         <h3>👥 Jugadores en Sala</h3>
-        <div id="lista-jugadores" style="margin-top:10px;"></div>
+        <div id="lista-jugadores"></div>
       </div>
     </div>
   </div>
 
-  <!-- VISTA 3: TABLERO DE JUEGO -->
+  <!-- VISTA 3: TABLERO INTERACTIVO -->
   <div id="vista-juego" class="oculto">
-    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:15px;">
+    <div class="header-juego">
       <h2 id="txt-titulo-concurso">Química Pro</h2>
-      <h3 style="color:var(--accent-pink)">⏱️ <span id="txt-cronometro">120</span>s</h3>
+      <h3 class="text-pink">⏱️ <span id="txt-cronometro">120</span>s</h3>
     </div>
     
-    <div class="grid-container" style="grid-template-columns: 1fr 280px;">
+    <div class="grid-container grid-juego">
       <div id="tablero-cartas" class="board-grid"></div>
       <div>
-        <h3>🏆 Marcador</h3>
-        <div id="tabla-puntuaciones" style="margin-top:10px;"></div>
+        <h3>🏆 Marcador Live</h3>
+        <div id="tabla-puntuaciones"></div>
       </div>
     </div>
   </div>
