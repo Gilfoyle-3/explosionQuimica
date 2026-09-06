@@ -52,6 +52,19 @@
       <div class="panel">
         <input type="text" id="nombreConcurso" placeholder="Nombre del Torneo">
         <input type="number" id="tiempoConcurso" placeholder="Tiempo en Segundos (ej: 60)" value="60">
+
+        <!-- SELECTOR DE CATEGORÍAS -->
+        <div style="margin-top: 10px;">
+          <div style="font-weight:800; color:var(--neon-gold); font-size:0.9rem; margin-bottom:8px; text-transform:uppercase;">
+            Seleccionar Categorías:
+          </div>
+          <div class="checkbox-group">
+            <label><input type="checkbox" value="fixed" checked> Metales Valencia Fija</label>
+            <label><input type="checkbox" value="variable" checked> Metales Valencia Variable</label>
+            <label><input type="checkbox" value="nometal" checked> No Metales</label>
+          </div>
+        </div>
+
         <button class="btn-iniciar" onclick="crearConcurso()">Generar Código</button>
         <button class="btn-secundario" onclick="mostrarSeccion('pantalla-inicio')">Volver al Inicio</button>
       </div>
