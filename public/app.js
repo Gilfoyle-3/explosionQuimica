@@ -61,7 +61,7 @@ const AudioFX = {
   }
 };
 
-// BASE DE DATOS COMPLETA DE ELEMENTOS Y VALENCIAS
+// BASE DE DATOS EXTENSA Y DETALLADA POR CATEGORÍAS
 const ELEMENT_DATABASE = [
   // --- METALES VALENCIA FIJA ---
   { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
@@ -88,10 +88,10 @@ const ELEMENT_DATABASE = [
   { cat: 'tri_fixed', name: 'Indio', symbol: 'In', val: '+3' },
   { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
 
-  { cat: 'tetra_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
-  { cat: 'tetra_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
-  { cat: 'hexa_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
-  { cat: 'hexa_fixed', name: 'Wolframio', symbol: 'W', val: '+6' },
+  { cat: 'poly_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
+  { cat: 'poly_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
+  { cat: 'poly_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
+  { cat: 'poly_fixed', name: 'Wolframio', symbol: 'W', val: '+6' },
 
   // --- METALES VALENCIA VARIABLE ---
   { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
@@ -155,12 +155,13 @@ function crearConcurso() {
     return;
   }
 
-  const elementosFiltrados = ELEMENT_DATABASE.filter(elem => {
-    if (selectedCategories.includes('fixed') && elem.cat.includes('_fixed')) return true;
-    if (selectedCategories.includes('variable') && elem.cat === 'variable') return true;
-    if (selectedCategories.includes('nometal') && elem.cat === 'nometal') return true;
-    return false;
-  });
+  // Filtrado flexible por categorías específicas
+  const elementosFiltrados = ELEMENT_DATABASE.filter(elem => selectedCategories.includes(elem.cat));
+
+  if (elementosFiltrados.length === 0) {
+    alert('No hay elementos para la combinación seleccionada.');
+    return;
+  }
 
   esHost = true;
   window.elementosPartida = elementosFiltrados;
@@ -288,7 +289,7 @@ function handleCardClick(cardEl, cardData, idx) {
   if (cardData.type === 'name') tagTexto = 'NOMBRE';
   if (cardData.type === 'valence') {
     tagTexto = 'VALENCIA';
-    textoMostrado = cardData.content; // SOLO MUESTRA LOS NÚMEROS Y SIGNOS
+    textoMostrado = cardData.content; // MUESTRA SÓLO NÚMEROS Y SIGNOS
   }
 
   cardEl.querySelector('.symbol').innerText = textoMostrado;
@@ -358,13 +359,12 @@ function checkTrioMatch() {
 function activarBomba(cardEl, index) {
   AudioFX.playBomb();
   
-  // MOSTRAR LA CARTA DE BOMBA
   cardEl.classList.add('flipped');
   cardEl.querySelector('.symbol').innerText = '💣';
   cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
 
   const allCards = document.querySelectorAll('.card');
-  const cols = 4;
+  const cols = 5;
 
   const radioIndexes = [
     index - 1, index + 1,
@@ -372,7 +372,6 @@ function activarBomba(cardEl, index) {
     index + cols, index + cols - 1, index + cols + 1
   ];
 
-  // REVELAR VECINAS
   radioIndexes.forEach(i => {
     if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
       const data = currentDeck[i];
@@ -384,7 +383,6 @@ function activarBomba(cardEl, index) {
     }
   });
 
-  // OCULTAR VECINAS Y DESAPARECER LA BOMBA LUEGO DE UN MOMENTO
   setTimeout(() => {
     cardEl.classList.add('power-used');
     currentDeck[index].matched = true;
@@ -402,12 +400,10 @@ function activarBomba(cardEl, index) {
 function activarTornado(cardEl, index) {
   AudioFX.playBomb();
 
-  // MOSTRAR LA CARTA DE TORNADO
   cardEl.classList.add('flipped');
   cardEl.querySelector('.symbol').innerText = '🌪️';
   cardEl.querySelector('.type-tag').innerText = 'POWER-UP';
 
-  // DESAPARECER TORNADO Y REORDENAR MAZO
   setTimeout(() => {
     cardEl.classList.add('power-used');
     currentDeck[index].matched = true;
