@@ -10,50 +10,79 @@ app.use(express.static('public'));
 
 const rooms = {};
 
+// Base de datos exacta basada en tu tabla de metales
 const valenciaDatabase = [
-  // --- MONOVALENTES (Val. 1 / -1) ---
+  // --- MONOVALENTES (+1) ---
   { id: "li", elem: "Litio", sym: "Li", val: "+1", cat: "mono" },
   { id: "na", elem: "Sodio", sym: "Na", val: "+1", cat: "mono" },
   { id: "k", elem: "Potasio", sym: "K", val: "+1", cat: "mono" },
+  { id: "rb", elem: "Rubidio", sym: "Rb", val: "+1", cat: "mono" },
   { id: "ag", elem: "Plata", sym: "Ag", val: "+1", cat: "mono" },
-  { id: "f", elem: "Flúor", sym: "F", val: "-1", cat: "mono" },
-  { id: "h", elem: "Hidrógeno", sym: "H", val: "+1", cat: "mono" },
+  { id: "cs", elem: "Cesio", sym: "Cs", val: "+1", cat: "mono" },
+  { id: "fr", elem: "Francio", sym: "Fr", val: "+1", cat: "mono" },
+  { id: "nh4", elem: "Amonio", sym: "NH₄", val: "+1", cat: "mono" },
 
-  // --- DIVALENTES (Val. 2 / -2) ---
-  { id: "ca", elem: "Calcio", sym: "Ca", val: "+2", cat: "di" },
+  // --- DIVALENTES (+2) ---
   { id: "mg", elem: "Magnesio", sym: "Mg", val: "+2", cat: "di" },
+  { id: "ca", elem: "Calcio", sym: "Ca", val: "+2", cat: "di" },
   { id: "zn", elem: "Zinc", sym: "Zn", val: "+2", cat: "di" },
   { id: "ba", elem: "Bario", sym: "Ba", val: "+2", cat: "di" },
   { id: "be", elem: "Berilio", sym: "Be", val: "+2", cat: "di" },
-  { id: "o", elem: "Oxígeno", sym: "O", val: "-2", cat: "di" },
+  { id: "cd", elem: "Cadmio", sym: "Cd", val: "+2", cat: "di" },
+  { id: "sr", elem: "Estroncio", sym: "Sr", val: "+2", cat: "di" },
+  { id: "ra", elem: "Radio", sym: "Ra", val: "+2", cat: "di" },
 
-  // --- TRIVALENTES (Val. 3 / -3) ---
+  // --- TRIVALENTES (+3) ---
   { id: "al", elem: "Aluminio", sym: "Al", val: "+3", cat: "tri" },
-  { id: "b", elem: "Boro", sym: "B", val: "+3", cat: "tri" },
-  { id: "bi", elem: "Bismuto", sym: "Bi", val: "+3", cat: "tri" },
-  { id: "n", elem: "Nitrógeno", sym: "N", val: "-3, +3, +5", cat: "tri" },
+  { id: "sc", elem: "Escandio", sym: "Sc", val: "+3", cat: "tri" },
+  { id: "ga", elem: "Galio", sym: "Ga", val: "+3", cat: "tri" },
+  { id: "y", elem: "Ytrio", sym: "Y", val: "+3", cat: "tri" },
+  { id: "in", elem: "Indio", sym: "In", val: "+3", cat: "tri" },
+  { id: "la", elem: "Lantano", sym: "La", val: "+3", cat: "tri" },
+  { id: "ac", elem: "Actinio", sym: "Ac", val: "+3", cat: "tri" },
+  { id: "cr3", elem: "Cromo", sym: "Cr", val: "+3", cat: "tri" },
+  { id: "lu", elem: "Lutecio", sym: "Lu", val: "+3", cat: "tri" },
 
-  // --- TETRAVALENTES (Val. 4) ---
-  { id: "c", elem: "Carbono", sym: "C", val: "-4, +2, +4", cat: "tetra" },
-  { id: "si", elem: "Silicio", sym: "Si", val: "+4", cat: "tetra" },
-  { id: "pt", elem: "Platino", sym: "Pt", val: "+2, +4", cat: "tetra" },
-
-  // --- VARIABLE ---
+  // --- MONO-DIVALENTES ---
   { id: "cu", elem: "Cobre", sym: "Cu", val: "+1, +2", cat: "variable" },
   { id: "hg", elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "variable" },
-  { id: "au", elem: "Oro", sym: "Au", val: "+1, +3", cat: "variable" },
+
+  // --- MONO-TRIVALENTES ---
+  { id: "au", elem: "Oro", sym: "Au", val: "+1, +2", cat: "variable" },
+  { id: "tl", elem: "Talio", sym: "Tl", val: "+1, +2", cat: "variable" },
+
+  // --- DI-TRIVALENTES ---
   { id: "fe", elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "variable" },
   { id: "co", elem: "Cobalto", sym: "Co", val: "+2, +3", cat: "variable" },
   { id: "ni", elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "variable" },
-  { id: "pb", elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "variable" },
-  { id: "sn", elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "variable" },
+  { id: "sm", elem: "Samario", sym: "Sm", val: "+2, +3", cat: "variable" },
+  { id: "eu", elem: "Europio", sym: "Eu", val: "+2, +3", cat: "variable" },
+  { id: "yb", elem: "Yterbio", sym: "Yb", val: "+2, +3", cat: "variable" },
+  { id: "tm", elem: "Tulio", sym: "Tm", val: "+2, +3", cat: "variable" },
+
+  // --- DI-TETRAVALENTES ---
+  { id: "pb", elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "tetra" },
+  { id: "ge", elem: "Germanio", sym: "Ge", val: "+2, +4", cat: "tetra" },
+  { id: "sn", elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "tetra" },
+  { id: "pt", elem: "Platino", sym: "Pt", val: "+2, +4", cat: "tetra" },
+  { id: "po", elem: "Polonio", sym: "Po", val: "+2, +4", cat: "tetra" },
+  { id: "pd", elem: "Paladio", sym: "Pd", val: "+2, +4", cat: "tetra" },
 
   // --- POLIVALENTES ---
-  { id: "s", elem: "Azufre", sym: "S", val: "-2, +2, +4, +6", cat: "polivalente" },
-  { id: "cl", elem: "Cloro", sym: "Cl", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
-  { id: "br", elem: "Bromo", sym: "Br", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
-  { id: "i", elem: "Yodo", sym: "Y", val: "-1, +1, +3, +5, +7", cat: "polivalente" },
-  { id: "p", elem: "Fósforo", sym: "P", val: "-3, +3, +5", cat: "polivalente" }
+  { id: "cr_poly", elem: "Cromo (Polivalente)", sym: "Cr", val: "+2, +3, +6", cat: "polivalente" },
+  { id: "mn", elem: "Manganeso", sym: "Mn", val: "+2, +3, +4, +6, +7", cat: "polivalente" },
+  { id: "bi", elem: "Bismuto", sym: "Bi", val: "+3, +5", cat: "polivalente" },
+  { id: "ti", elem: "Titanio", sym: "Ti", val: "+2, +3, +4", cat: "polivalente" },
+  { id: "v", elem: "Vanadio", sym: "V", val: "+2, +3, +4, +5", cat: "polivalente" },
+  { id: "mo", elem: "Molibdeno", sym: "Mo", val: "+2, +3, +4, +5, +6", cat: "polivalente" },
+  { id: "w", elem: "Wolframio", sym: "W", val: "+2, +3, +4, +5, +6", cat: "polivalente" },
+  { id: "re", elem: "Renio", sym: "Re", val: "+1, +2, +3, +4, +6, +7", cat: "polivalente" },
+  { id: "os", elem: "Osmio", sym: "Os", val: "+2, +3, +4, +6, +8", cat: "polivalente" },
+  { id: "u", elem: "Uranio", sym: "U", val: "+3, +4, +5, +6", cat: "polivalente" },
+  { id: "am", elem: "Americio", sym: "Am", val: "+3, +4, +5, +6", cat: "polivalente" },
+  { id: "ru", elem: "Rutenio", sym: "Ru", val: "+2, +3, +4", cat: "polivalente" },
+  { id: "np", elem: "Neptunio", sym: "Np", val: "+3, +4, +5, +6", cat: "polivalente" },
+  { id: "ir", elem: "Iridio", sym: "Ir", val: "+2, +3, +4, +6", cat: "polivalente" }
 ];
 
 function generateCode() {
@@ -73,11 +102,9 @@ io.on('connection', (socket) => {
   socket.on('create_room', ({ title, duration, selectedCategories, elementLimit }) => {
     const roomCode = generateCode();
     
-    // Filtrar por categorías seleccionadas y barajar
     let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
     filteredPool.sort(() => 0.5 - Math.random());
 
-    // Limitar la cantidad de elementos según lo que eligió el usuario
     const pool = filteredPool.slice(0, parseInt(elementLimit));
     
     rooms[roomCode] = {
@@ -122,7 +149,6 @@ io.on('connection', (socket) => {
       deck.push({ id: `trio_${index}`, text: item.val, isPower: false });
     });
 
-    // Añadir cartas de poder (Tornado y Bomba)
     deck.push({ id: 'power_tornado_1', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
     deck.push({ id: 'power_bomba_1', text: '💣 BOMBA 3X3', isPower: true, powerType: 'bomba' });
 
