@@ -11,12 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const rooms = {};
 
-// Normaliza textos de valencia para comparación flexible ("+3", "3", "3+" -> "3")
-function normalizeValence(valStr) {
-  return valStr.toString().replace(/[^0-9]/g, '');
-}
-
-// Genera la baraja filtrando por las categorías seleccionadas por el Host
+// Genera la baraja con Tríos (Símbolo, Nombre, Valencia) + Poderes (Bomba, Tornado)
 function generateDeck(elements, categoriasElegidas) {
   let filteredElements = elements;
 
@@ -24,35 +19,49 @@ function generateDeck(elements, categoriasElegidas) {
     filteredElements = elements.filter(el => categoriasElegidas.includes(el.cat));
   }
 
-  // Si se seleccionaron pocos elementos, usamos todos para no quedar sin cartas
-  if (filteredElements.length < 4) {
+  if (filteredElements.length < 3) {
     filteredElements = elements;
   }
 
   let cards = [];
   filteredElements.forEach((el) => {
-    // Carta de Elemento (Símbolo + Nombre)
+    // 1. Carta Símbolo
     cards.push({
-      type: 'element',
+      idElem: el.symbol,
+      type: 'symbol',
       content: el.symbol,
-      sub: el.name,
+      sub: 'SÍMBOLO',
       valences: el.val
     });
 
-    // Carta de Valencia asociada (Tomamos la primera valencia representativa)
+    // 2. Carta Nombre
+    cards.push({
+      idElem: el.symbol,
+      type: 'name',
+      content: el.name,
+      sub: 'NOMBRE',
+      valences: el.val
+    });
+
+    // 3. Carta Valencia
     const primeraVal = el.val.split(',')[0].trim();
     cards.push({
+      idElem: el.symbol,
       type: 'valence',
       content: primeraVal,
-      sub: 'VALENCIA'
+      sub: 'VALENCIA',
+      valences: el.val
     });
   });
+
+  // Agregar Poderes Especiales
+  cards.push({ idElem: 'POWER_BOMB', type: 'power_bomb', content: '💣', sub: 'BOMBA', valences: '' });
+  cards.push({ idElem: 'POWER_TORNADO', type: 'power_tornado', content: '🌪️', sub: 'TORNADO', valences: '' });
 
   return cards.sort(() => Math.random() - 0.5);
 }
 
 io.on('connection', (socket) => {
-  // Crear Sala (HOST)
   socket.on('createRoom', ({ nombre, tiempo, categorias }) => {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
     rooms[roomId] = {
@@ -68,7 +77,6 @@ io.on('connection', (socket) => {
     socket.emit('roomCreated', { roomId });
   });
 
-  // Unirse a Sala (JUGADOR)
   socket.on('joinRoom', ({ roomId, playerName }) => {
     if (rooms[roomId]) {
       socket.join(roomId);
@@ -79,7 +87,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Iniciar Concurso (HOST)
   socket.on('startGameHost', ({ roomId, elements }) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
@@ -105,7 +112,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Actualización de Puntaje
   socket.on('updateScore', ({ roomId, points }) => {
     const room = rooms[roomId];
     if (room) {
@@ -118,7 +124,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Desconexión limpia
   socket.on('disconnect', () => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
@@ -134,5 +139,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Servidor iniciado en puerto ${PORT}`);
+  console.log(`Servidor en puerto ${PORT}`);
 });
