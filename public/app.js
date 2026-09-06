@@ -11,7 +11,7 @@ function switchView(viewId) {
   document.getElementById(viewId).classList.add('active');
 }
 
-// CREADOR: Crear Sala
+// CREADOR: Crear la sala desde la pantalla de configuración
 function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Concurso de Química";
   const category = document.getElementById('create-category').value;
@@ -21,7 +21,7 @@ function handleCreateRoom() {
   socket.emit('create_room', { title, duration, elementCount, category });
 }
 
-socket.on('room_created', ({ roomCode, title }) => {
+socket.on('room_created', ({ roomCode }) => {
   currentRoomCode = roomCode;
   document.getElementById('host-code-display').innerText = roomCode;
   switchView('view-host-lobby');
@@ -32,35 +32,32 @@ function handleJoinRoom() {
   const name = document.getElementById('join-name').value.trim();
   const roomCode = document.getElementById('join-code').value.trim();
 
-  if (!name || !roomCode) return alert("Ingresa tu nombre y código.");
+  if (!name || !roomCode) return alert("Por favor ingresa tu nombre y el código.");
 
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
 }
 
-socket.on('joined_waiting_room', ({ title }) => {
+socket.on('joined_waiting_room', () => {
   switchView('view-player-waiting');
 });
 
 socket.on('error_message', (msg) => alert(msg));
 
-// Actualizar lista de jugadores
 socket.on('update_player_list', (players) => {
   const list = document.getElementById('host-player-list');
   const count = document.getElementById('player-count');
   if (list && count) {
     count.innerText = players.length;
-    list.innerHTML = players.map(p => `<li>${p.name}</li>`).join('');
+    list.innerHTML = players.map(p => `<li>👤 ${p.name}</li>`).join('');
   }
 });
 
-// CREADOR: Iniciar Juego
 function handleStartGame() {
   socket.emit('start_game', currentRoomCode);
 }
 
-// Evento de Inicio Global
-socket.on('game_started', ({ deck, duration }) => {
+socket.on('game_started', ({ deck }) => {
   if (document.getElementById('view-host-lobby').classList.contains('active')) {
     switchView('view-host-live');
   } else {
@@ -69,7 +66,6 @@ socket.on('game_started', ({ deck, duration }) => {
   }
 });
 
-// Renderizar Tablero
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
   grid.innerHTML = '';
@@ -86,14 +82,13 @@ function renderBoard(deck) {
   });
 }
 
-// Lógica de Selección y Bomba
 function handleCardClick(cardEl, index) {
   if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
   if (isBombMode) {
     executeBombEffect(index);
     isBombMode = false;
-    document.getElementById('btn-bomba').style.background = 'var(--red)';
+    document.getElementById('btn-bomba').style.background = 'var(--accent-red)';
     return;
   }
 
@@ -136,7 +131,6 @@ function resetTurn() {
   isProcessing = false;
 }
 
-// PODER: Tornado (Mezclar posiciones)
 function triggerTornado() {
   socket.emit('use_tornado', currentRoomCode);
 }
@@ -147,15 +141,13 @@ socket.on('apply_tornado', () => {
 
   const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
   cards.sort(() => 0.5 - Math.random());
-  
   cards.forEach(c => grid.appendChild(c));
 });
 
-// PODER: Bomba (Revela 3x3 alrededor)
 function armBombMode() {
   isBombMode = true;
-  alert("💣 Modo Bomba Activado: Haz clic en cualquier casilla para ver las 9 cartas a su alrededor durante 2 segundos.");
-  document.getElementById('btn-bomba').style.background = 'var(--gold)';
+  alert("💣 Bomba lista: Selecciona una carta para revelar un área de 3x3 por 2 segundos.");
+  document.getElementById('btn-bomba').style.background = 'var(--accent-gold)';
 }
 
 function executeBombEffect(centerIndex) {
@@ -185,7 +177,6 @@ function executeBombEffect(centerIndex) {
   });
 }
 
-// Temporizador y Leaderboard
 socket.on('timer_tick', (seconds) => {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
   const secs = (seconds % 60).toString().padStart(2, '0');
@@ -206,6 +197,6 @@ socket.on('update_leaderboard', (players) => {
   renderList('player-live-leaderboard');
 });
 
-socket.on('game_over', (finalPlayers) => {
-  alert("⌛ ¡Tiempo agotado! El concurso ha finalizado.");
+socket.on('game_over', () => {
+  alert("⌛ ¡El tiempo ha terminado!");
 });
