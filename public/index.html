@@ -21,29 +21,42 @@
         <!-- BLOQUE ANFITRIÓN -->
         <div class="sub-panel host-panel">
           <h2>👑 ANFITRIÓN</h2>
-          <p class="panel-desc">Configura y crea un nuevo concurso</p>
+          <p class="panel-desc">Configura la partida y crea la sala</p>
           
-          <div class="input-group">
-            <label for="select-num-elementos">Elementos Químicos:</label>
-            <select id="select-num-elementos" class="custom-select">
-              <option value="4">4 Elementos (12 cartas + poderes)</option>
-              <option value="6">6 Elementos (18 cartas + poderes)</option>
-              <option value="8" selected>8 Elementos (24 cartas + poderes)</option>
-              <option value="10">10 Elementos (30 cartas + poderes)</option>
-              <option value="12">12 Elementos (36 cartas + poderes)</option>
-              <option value="16">16 Elementos (48 cartas + poderes)</option>
-            </select>
+          <div class="config-container">
+            <label class="config-label">Cantidad de Elementos Químicos:</label>
+            <!-- Selector visual eSports Pro -->
+            <div class="element-selector-grid">
+              <button type="button" class="btn-element-opt" data-val="4">
+                <span class="num">4</span>
+                <span class="sub">12 cartas</span>
+              </button>
+              <button type="button" class="btn-element-opt active" data-val="8">
+                <span class="num">8</span>
+                <span class="sub">24 cartas</span>
+              </button>
+              <button type="button" class="btn-element-opt" data-val="12">
+                <span class="num">12</span>
+                <span class="sub">36 cartas</span>
+              </button>
+              <button type="button" class="btn-element-opt" data-val="16">
+                <span class="num">16</span>
+                <span class="sub">48 cartas</span>
+              </button>
+            </div>
+            <!-- Input oculto para sincronizar con la lógica -->
+            <input type="hidden" id="select-num-elementos" value="8">
           </div>
 
-          <button id="btn-crear-sala" class="btn btn-primary">Crear Concurso</button>
+          <button id="btn-crear-sala" class="btn btn-primary glow-primary">🚀 Crear Concurso</button>
         </div>
 
         <div class="divider"><span>O</span></div>
 
-        <!-- BLOQUE JUGADOR -->
+        <!-- BLOQUE CONCURSANTE -->
         <div class="sub-panel player-panel">
           <h2>🎮 CONCURSANTE</h2>
-          <p class="panel-desc">Ingresa tus datos para participar</p>
+          <p class="panel-desc">Ingresa para unirte al lobby</p>
 
           <div class="input-group">
             <input type="text" id="input-nickname" placeholder="Tu Nombre / Apodo" maxlength="15" autocomplete="off">
@@ -53,7 +66,7 @@
             <input type="text" id="input-codigo" placeholder="Código de Sala (6 dígitos)" maxlength="6" autocomplete="off">
           </div>
 
-          <button id="btn-unirse" class="btn btn-secondary">Entrar al Concurso</button>
+          <button id="btn-unirse" class="btn btn-secondary glow-secondary">⚡ Entrar al Concurso</button>
         </div>
       </div>
 
@@ -77,7 +90,7 @@
 
       <!-- VISTA ANFITRIÓN -->
       <div id="panel-anfitrion-controles" class="lobby-actions hidden">
-        <button id="btn-iniciar-concurso" class="btn btn-action glow">🚀 ¡INICIAR CONCURSO AHORA!</button>
+        <button id="btn-iniciar-concurso" class="btn btn-action glow-action">🔥 ¡INICIAR CONCURSO AHORA!</button>
       </div>
 
       <!-- VISTA CONCURSANTE -->
