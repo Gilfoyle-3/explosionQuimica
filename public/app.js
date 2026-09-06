@@ -119,7 +119,6 @@ socket.on('roomCreated', ({ roomId }) => {
   mostrarSeccion('pantalla-sala-host');
 });
 
-// NUEVO LOBBY DE ESPERA EN VIVO (HOST)
 socket.on('playerJoined', ({ players }) => {
   const lista = document.getElementById('lista-jugadores-host');
   if (lista) {
@@ -177,7 +176,14 @@ function renderBoard(deck) {
     const cardEl = document.createElement('div');
     cardEl.classList.add('card');
     cardEl.dataset.index = idx;
-    if (cardData.matched) cardEl.classList.add('matched');
+    
+    if (cardData.matched) {
+      if (cardData.type === 'power_bomb' || cardData.type === 'power_tornado') {
+        cardEl.classList.add('power-used');
+      } else {
+        cardEl.classList.add('matched');
+      }
+    }
 
     cardEl.innerHTML = `
       <div class="symbol">?</div>
@@ -190,7 +196,7 @@ function renderBoard(deck) {
 }
 
 function handleCardClick(cardEl, cardData, idx) {
-  if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched') || flippedCards.length >= 3) return;
+  if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched') || cardEl.classList.contains('power-used') || flippedCards.length >= 3) return;
 
   if (cardData.type === 'power_bomb') {
     activarBomba(idx);
@@ -198,13 +204,13 @@ function handleCardClick(cardEl, cardData, idx) {
   }
 
   if (cardData.type === 'power_tornado') {
-    activarTornado();
+    activarTornado(idx);
     return;
   }
 
   cardEl.classList.add('flipped');
   cardEl.querySelector('.symbol').innerText = cardData.content;
-  cardEl.querySelector('.type-tag').innerText = cardData.sub;
+  cardEl.querySelector('.type-tag').innerText = cardData.sub || '';
 
   flippedCards.push({ element: cardEl, data: cardData });
 
@@ -266,39 +272,52 @@ function checkTrioMatch() {
   }
 }
 
+// ACTIVACIÓN Y DESAPARICIÓN DE POWER-UPS
 function activarBomba(index) {
   const allCards = document.querySelectorAll('.card');
-  const cols = Math.floor(Math.sqrt(allCards.length)) || 4;
+  const cols = 4;
   
+  const bombCardEl = allCards[index];
+  if (bombCardEl) {
+    bombCardEl.classList.add('power-used');
+    currentDeck[index].matched = true;
+  }
+
   const radioIndexes = [
-    index, index - 1, index + 1,
+    index - 1, index + 1,
     index - cols, index - cols - 1, index - cols + 1,
     index + cols, index + cols - 1, index + cols + 1
   ];
 
   radioIndexes.forEach(i => {
-    if (allCards[i] && !allCards[i].classList.contains('matched')) {
+    if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
       const data = currentDeck[i];
       if (data) {
         allCards[i].classList.add('flipped');
         allCards[i].querySelector('.symbol').innerText = data.content;
-        allCards[i].querySelector('.type-tag').innerText = data.sub;
+        allCards[i].querySelector('.type-tag').innerText = data.sub || '';
       }
     }
   });
 
   setTimeout(() => {
     radioIndexes.forEach(i => {
-      if (allCards[i] && !allCards[i].classList.contains('matched')) {
+      if (allCards[i] && !currentDeck[i]?.matched && !allCards[i].classList.contains('power-used')) {
         allCards[i].classList.remove('flipped');
         allCards[i].querySelector('.symbol').innerText = '?';
         allCards[i].querySelector('.type-tag').innerText = 'TAP';
       }
     });
-  }, 3000);
+  }, 2500);
 }
 
-function activarTornado() {
+function activarTornado(index) {
+  const allCards = document.querySelectorAll('.card');
+  if (allCards[index]) {
+    allCards[index].classList.add('power-used');
+    currentDeck[index].matched = true;
+  }
+
   flippedCards.forEach(c => {
     c.element.classList.remove('flipped');
     c.element.querySelector('.symbol').innerText = '?';
@@ -306,24 +325,25 @@ function activarTornado() {
   });
   flippedCards = [];
 
-  const unmatched = currentDeck.filter(c => !c.matched);
-  unmatched.sort(() => Math.random() - 0.5);
+  setTimeout(() => {
+    const unmatched = currentDeck.filter(c => !c.matched);
+    unmatched.sort(() => Math.random() - 0.5);
 
-  let umIdx = 0;
-  for (let i = 0; i < currentDeck.length; i++) {
-    if (!currentDeck[i].matched) {
-      currentDeck[i] = unmatched[umIdx++];
+    let umIdx = 0;
+    for (let i = 0; i < currentDeck.length; i++) {
+      if (!currentDeck[i].matched) {
+        currentDeck[i] = unmatched[umIdx++];
+      }
     }
-  }
-
-  renderBoard(currentDeck);
+    renderBoard(currentDeck);
+  }, 400);
 }
 
-// NUEVO RENDERIZADO DEL RANKING PRO
+// RANKING REDISEÑADO CON PODIOS ESPORTS
 function actualizarTablaRanking(players) {
   const container = document.getElementById('tabla-ranking');
   if (!container) return;
-  
+
   container.className = 'ranking-list';
   container.innerHTML = players.map((p, index) => {
     const pos = index + 1;
@@ -338,9 +358,12 @@ function actualizarTablaRanking(players) {
       <div class="ranking-card ${topClass}">
         <div class="rank-left">
           <div class="rank-badge">${medal}</div>
-          <div class="rank-name">${p.name}</div>
+          <div class="rank-info">
+            <span class="rank-name">${p.name}</span>
+            <span class="rank-sub">Puesto ${pos}</span>
+          </div>
         </div>
-        <div class="rank-score">${p.points} <span style="font-size:0.75rem; color:var(--text-muted)">pts</span></div>
+        <div class="rank-score-pill">${p.points} <span style="font-size: 0.7rem;">PTS</span></div>
       </div>
     `;
   }).join('');
