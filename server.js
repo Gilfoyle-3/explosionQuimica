@@ -17,32 +17,57 @@ app.use(express.static('public'));
 // BASE DE DATOS COMPLETA DE ELEMENTOS
 // ==========================================
 const FAMILIAS_QUIMICA = {
+  // ==========================================
   // METALES DE VALENCIA FIJA
+  // ==========================================
   monovalentes: [
     { nombre: 'Litio', simbolo: 'Li', valencia: '+1' },
     { nombre: 'Sodio', simbolo: 'Na', valencia: '+1' },
     { nombre: 'Potasio', simbolo: 'K', valencia: '+1' },
-    { nombre: 'Plata', simbolo: 'Ag', valencia: '+1' }
+    { nombre: 'Rubidio', simbolo: 'Rb', valencia: '+1' },
+    { nombre: 'Cesio', simbolo: 'Cs', valencia: '+1' },
+    { nombre: 'Francio', simbolo: 'Fr', valencia: '+1' },
+    { nombre: 'Plata', simbolo: 'Ag', valencia: '+1' },
+    { nombre: 'Amonio', simbolo: 'NH4', valencia: '+1' }
   ],
   divalentes: [
+    { nombre: 'Berilio', simbolo: 'Be', valencia: '+2' },
     { nombre: 'Magnesio', simbolo: 'Mg', valencia: '+2' },
     { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2' },
+    { nombre: 'Estroncio', simbolo: 'Sr', valencia: '+2' },
+    { nombre: 'Bario', simbolo: 'Ba', valencia: '+2' },
+    { nombre: 'Radio', simbolo: 'Ra', valencia: '+2' },
     { nombre: 'Zinc', simbolo: 'Zn', valencia: '+2' },
-    { nombre: 'Bario', simbolo: 'Ba', valencia: '+2' }
+    { nombre: 'Cadmio', simbolo: 'Cd', valencia: '+2' }
   ],
   trivalentes: [
     { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3' },
     { nombre: 'Escandio', simbolo: 'Sc', valencia: '+3' },
-    { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' }
+    { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' },
+    { nombre: 'Indio', simbolo: 'In', valencia: '+3' }
+  ],
+  tetravalentes: [
+    { nombre: 'Zirconio', simbolo: 'Zr', valencia: '+4' },
+    { nombre: 'Titanio', simbolo: 'Ti', valencia: '+4' },
+    { nombre: 'Osmio', simbolo: 'Os', valencia: '+4' },
+    { nombre: 'Iridio', simbolo: 'Ir', valencia: '+4' }
+  ],
+  hexavalentes: [
+    { nombre: 'Uranio', simbolo: 'U', valencia: '+6' },
+    { nombre: 'Wolframio', simbolo: 'W', valencia: '+6' },
+    { nombre: 'Molibdeno', simbolo: 'Mo', valencia: '+6' }
   ],
 
+  // ==========================================
   // METALES DE VALENCIA VARIABLE
+  // ==========================================
   variable_1_2: [
     { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
     { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' }
   ],
   variable_1_3: [
-    { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' }
+    { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' },
+    { nombre: 'Talio', simbolo: 'Tl', valencia: '+1, +3' }
   ],
   variable_2_3: [
     { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3' },
@@ -55,13 +80,17 @@ const FAMILIAS_QUIMICA = {
     { nombre: 'Platino', simbolo: 'Pt', valencia: '+2, +4' }
   ],
 
+  // ==========================================
   // NO METALES
+  // ==========================================
   halogenos: [
+    { nombre: 'Flúor', simbolo: 'F', valencia: '-1' },
     { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1, +1, +3, +5, +7' },
     { nombre: 'Bromo', simbolo: 'Br', valencia: '-1, +1, +3, +5, +7' },
     { nombre: 'Yodo', simbolo: 'I', valencia: '-1, +1, +3, +5, +7' }
   ],
   anfigenos: [
+    { nombre: 'Oxígeno', simbolo: 'O', valencia: '-2' },
     { nombre: 'Azufre', simbolo: 'S', valencia: '-2, +2, +4, +6' },
     { nombre: 'Selenio', simbolo: 'Se', valencia: '-2, +2, +4, +6' },
     { nombre: 'Teluro', simbolo: 'Te', valencia: '-2, +2, +4, +6' }
@@ -69,10 +98,21 @@ const FAMILIAS_QUIMICA = {
   nitrogenoides: [
     { nombre: 'Nitrógeno', simbolo: 'N', valencia: '-3, +1, +3, +5' },
     { nombre: 'Fósforo', simbolo: 'P', valencia: '-3, +1, +3, +5' },
-    { nombre: 'Arsénico', simbolo: 'As', valencia: '-3, +3, +5' }
+    { nombre: 'Arsénico', simbolo: 'As', valencia: '-3, +3, +5' },
+    { nombre: 'Antimonio', simbolo: 'Sb', valencia: '-3, +3, +5' }
+  ],
+  carbonoides: [
+    { nombre: 'Carbono', simbolo: 'C', valencia: '-4, +2, +4' },
+    { nombre: 'Silicio', simbolo: 'Si', valencia: '-4, +4' },
+    { nombre: 'Germanio', simbolo: 'Ge', valencia: '-4, +4' }
+  ],
+  boroides: [
+    { nombre: 'Boro', simbolo: 'B', valencia: '-3, +3' }
   ],
 
+  // ==========================================
   // ANFÓTEROS Y POLIVALENTES
+  // ==========================================
   polivalentes: [
     { nombre: 'Cromo', simbolo: 'Cr', valencia: '+2, +3, +6' },
     { nombre: 'Manganeso', simbolo: 'Mn', valencia: '+2, +3, +4, +6, +7' },
