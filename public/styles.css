@@ -51,7 +51,6 @@ body {
 .cyber-title { text-align: center; font-size: 1.3rem; color: var(--accent-cyan); }
 
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-
 .cyber-label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
 
 .cyber-input {
@@ -62,6 +61,41 @@ body {
   color: #fff;
   font-size: 1rem;
   outline: none;
+}
+
+/* REGLAS DEL JUEGO */
+.rules-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.95rem;
+}
+
+.trio-preview {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.trio-preview .badge {
+  background: rgba(6, 182, 212, 0.2);
+  border: 1px solid var(--accent-cyan);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.rules-box ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .checkbox-group {
@@ -139,8 +173,8 @@ body {
 .card.flipped { background: rgba(6, 182, 212, 0.2); border-color: var(--accent-cyan); }
 .card.matched { background: rgba(16, 185, 129, 0.2); border-color: var(--accent-green); opacity: 0.5; }
 
-.card .symbol { font-size: 1.2rem; font-weight: 700; }
-.card .type-tag { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+.card .symbol { font-size: 1.1rem; font-weight: 700; word-break: break-all; }
+.card .type-tag { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
 
 .cyber-table { width: 100%; border-collapse: collapse; }
 .cyber-table th, .cyber-table td { padding: 10px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
