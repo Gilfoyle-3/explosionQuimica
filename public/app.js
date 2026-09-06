@@ -8,12 +8,12 @@ let flippedCards = [];
 let isProcessing = false;
 
 const categoriesConfig = [
-  { id: "mono", label: "🟢 Monovalentes (+1)" },
-  { id: "di", label: "🔵 Divalentes (+2)" },
-  { id: "tri", label: "🟣 Trivalentes (+3)" },
-  { id: "variable", label: "🟠 Valencia Variable" },
-  { id: "tetra", label: "🟡 Di-Tetravalentes (+2, +4)" },
-  { id: "polivalente", label: "🔴 Polivalentes" }
+  { id: "mono", label: "🟢 Monovalentes (+1)", count: 8 },
+  { id: "di", label: "🔵 Divalentes (+2)", count: 8 },
+  { id: "tri", label: "🟣 Trivalentes (+3)", count: 9 },
+  { id: "variable", label: "🟠 Valencia Variable", count: 9 },
+  { id: "tetra", label: "🟡 Di-Tetravalentes (+2, +4)", count: 6 },
+  { id: "polivalente", label: "🔴 Polivalentes", count: 14 }
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -21,14 +21,32 @@ window.addEventListener('DOMContentLoaded', () => {
   if (container) {
     container.innerHTML = categoriesConfig.map(cat => `
       <label class="element-checkbox-item">
-        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked> ${cat.label}
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateMaxElementLimit()"> ${cat.label}
       </label>
     `).join('');
+    updateMaxElementLimit();
   }
 });
 
+function updateMaxElementLimit() {
+  const limitInput = document.getElementById('create-limit');
+  if (!limitInput) return;
+
+  let maxTotal = 0;
+  document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
+    const found = categoriesConfig.find(c => c.id === cb.value);
+    if (found) maxTotal += found.count;
+  });
+
+  limitInput.max = maxTotal || 1;
+  if (parseInt(limitInput.value) > maxTotal) {
+    limitInput.value = maxTotal;
+  }
+}
+
 function toggleAllCategories(status) {
   document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = status);
+  updateMaxElementLimit();
 }
 
 function switchView(viewId) {
@@ -39,7 +57,7 @@ function switchView(viewId) {
 function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
   const duration = document.getElementById('create-duration').value;
-  const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 8;
+  const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
   
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
@@ -75,7 +93,6 @@ socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
   switchView('view-player-waiting');
   
-  // Insertar sección de reglas explicativas en la sala de espera de jugadores
   const waitingView = document.getElementById('view-player-waiting');
   if (waitingView && !document.getElementById('game-rules-box')) {
     const rulesBox = document.createElement('div');
@@ -173,7 +190,6 @@ function handleCardClick(cardEl, index) {
     cardEl.classList.add('flipped', 'power-card');
     cardEl.innerText = cardEl.dataset.text;
 
-    // Velocidad de respuesta rápida sin alertas molestas
     setTimeout(() => {
       if (cardEl.dataset.powerType === 'tornado') {
         socket.emit('trigger_global_tornado', currentRoomCode);
@@ -208,7 +224,7 @@ function checkTrio() {
       document.getElementById('player-score').innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
-    }, 200); // Rápido y fluido
+    }, 200);
   } else {
     setTimeout(() => {
       flippedCards.forEach(c => {
@@ -216,7 +232,7 @@ function checkTrio() {
         c.innerText = '[ ? ]';
       });
       resetTurn();
-    }, 450); // Volteo rápido si falla
+    }, 450);
   }
 }
 
@@ -267,7 +283,6 @@ socket.on('timer_tick', (seconds) => {
 
 socket.on('game_over', (players) => {
   if (isHostUser) {
-    // Para el Creador / Host: Botón de Volver al Inicio
     const hostLive = document.getElementById('view-host-live');
     if (hostLive) {
       hostLive.innerHTML = `
@@ -279,7 +294,6 @@ socket.on('game_over', (players) => {
       `;
     }
   } else {
-    // Para el Jugador: Mostrar su ranking final detallado
     const playerGame = document.getElementById('view-player-game');
     if (playerGame) {
       const myRankData = players.find(p => p.id === mySocketId);
