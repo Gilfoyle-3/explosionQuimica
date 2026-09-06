@@ -1,20 +1,21 @@
 :root {
-  --bg-color: #0d0f17;
-  --panel-bg: rgba(22, 27, 46, 0.85);
+  --bg-color: #0b0c10;
+  --panel-bg: rgba(20, 24, 38, 0.9);
   --primary: #00f0ff;
-  --secondary: #ff007f;
+  --secondary: #ff0055;
   --accent: #7000ff;
+  --gold: #ffbd00;
   --text-main: #f0f4f8;
-  --text-muted: #8a99ad;
-  --border-glow: rgba(0, 240, 255, 0.3);
-  --radius: 12px;
+  --text-muted: #94a3b8;
+  --border-glow: rgba(0, 240, 255, 0.35);
+  --radius: 16px;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 body {
@@ -33,13 +34,13 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at 50% 50%, #1a1d36 0%, #0d0f17 100%);
+  background: radial-gradient(circle at 50% 30%, #1a1f38 0%, #0b0c10 100%);
   z-index: -1;
 }
 
 .main-container {
   width: 95%;
-  max-width: 1100px;
+  max-width: 1150px;
   margin: 20px auto;
 }
 
@@ -49,20 +50,29 @@ body {
 }
 
 .logo {
-  font-size: 2.2rem;
+  font-size: 2.6rem;
+  font-weight: 900;
   letter-spacing: 2px;
-  text-shadow: 0 0 10px var(--primary);
+  text-shadow: 0 0 15px var(--primary);
 }
 
 .logo .highlight {
   color: var(--primary);
 }
 
+.subtitle {
+  color: var(--secondary);
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 3px;
+  margin-top: -5px;
+}
+
 .panel-card {
   background: var(--panel-bg);
   border: 1px solid var(--border-glow);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
   border-radius: var(--radius);
   padding: 30px;
 }
@@ -73,7 +83,7 @@ body {
 
 .grid-login {
   display: flex;
-  gap: 20px;
+  gap: 25px;
   align-items: center;
 }
 
@@ -89,8 +99,9 @@ body {
 }
 
 .sub-panel h2 {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   margin-bottom: 5px;
+  color: var(--primary);
 }
 
 .panel-desc {
@@ -107,82 +118,33 @@ body {
   font-weight: bold;
 }
 
-.config-container {
-  margin-bottom: 20px;
-}
-
-.config-label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-
-.element-selector-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.btn-element-opt {
-  background: rgba(13, 15, 23, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  padding: 8px 4px;
-  color: var(--text-main);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease;
-}
-
-.btn-element-opt .num {
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
-.btn-element-opt .sub {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.btn-element-opt:hover {
-  border-color: var(--primary);
-  background: rgba(0, 240, 255, 0.1);
-}
-
-.btn-element-opt.active {
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(112, 0, 255, 0.25));
-  border: 1px solid var(--primary);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-}
-
-.btn-element-opt.active .num {
-  color: var(--primary);
-}
-
 .input-group {
   margin-bottom: 15px;
 }
 
-input[type="text"] {
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+input[type="text"], input[type="number"] {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(13, 15, 23, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 12, 16, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: #fff;
   font-size: 1rem;
   outline: none;
+  transition: all 0.3s ease;
 }
 
-input[type="text"]:focus {
+input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 8px var(--primary);
+  box-shadow: 0 0 10px var(--primary);
 }
 
 .btn {
@@ -193,11 +155,7 @@ input[type="text"]:focus {
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
+  transition: all 0.25s ease;
 }
 
 .btn-primary {
@@ -212,17 +170,24 @@ input[type="text"]:focus {
 
 .btn-action {
   background: linear-gradient(135deg, #00ff87, #60efff);
-  color: #0d0f17;
+  color: #0b0c10;
   font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 .error-msg {
-  color: #ff4757;
+  color: var(--secondary);
   text-align: center;
   margin-top: 15px;
+  font-weight: bold;
 }
 
-/* LOBBY */
+/* LOBBY Y REGLAS */
 .lobby-header {
   display: flex;
   justify-content: space-between;
@@ -241,24 +206,85 @@ input[type="text"]:focus {
 
 .room-code-badge strong {
   color: var(--primary);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   margin-left: 8px;
+}
+
+.rules-banner {
+  background: rgba(112, 0, 255, 0.15);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.rules-banner h3 {
+  color: var(--gold);
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.rules-banner ul {
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.config-container {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.config-container h3 {
+  font-size: 1rem;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 15px;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+input[type="range"] {
+  flex: 1;
+  accent-color: var(--primary);
+}
+
+.badge-count {
+  background: var(--primary);
+  color: #0b0c10;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .players-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   list-style: none;
-  margin: 20px 0;
+  margin: 15px 0 25px 0;
 }
 
 .jugador-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   text-align: center;
+  font-weight: bold;
 }
 
 .waiting-banner {
@@ -271,8 +297,8 @@ input[type="text"]:focus {
 }
 
 .spinner {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border: 3px solid rgba(255,255,255,0.1);
   border-top-color: var(--primary);
   border-radius: 50%;
@@ -283,33 +309,54 @@ input[type="text"]:focus {
   to { transform: rotate(360deg); }
 }
 
-/* TABLERO */
+/* TABLERO DE JUEGO */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.timer-box {
+  color: var(--gold);
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 12px;
-  margin-top: 20px;
 }
 
 .carta {
   aspect-ratio: 3/4;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   user-select: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.carta:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
 }
 
 .carta.revelada {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #3a0088);
   border-color: var(--primary);
 }
 
 .carta.emparejada {
-  opacity: 0.3;
+  opacity: 0.25;
   pointer-events: none;
 }
 
@@ -318,14 +365,17 @@ input[type="text"]:focus {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding: 5px;
 }
 
 .tipo-tag {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   color: var(--primary);
+  font-weight: bold;
+  margin-bottom: 4px;
 }
 
 .texto-principal {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: bold;
 }
