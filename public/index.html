@@ -8,33 +8,31 @@
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div class="background-overlay"></div>
+  <div class="cyber-grid"></div>
 
   <main class="main-container">
     <header class="app-header">
-      <h1 class="logo">EXPLOSIÓN <span class="highlight">QUÍMICA</span> 💥</h1>
-      <p class="subtitle">EDICIÓN eSPORTS - TABLA DE VALENCIAS</p>
+      <h1 class="logo">VALENCIA <span class="highlight">CLASH</span> ⚡</h1>
+      <p class="subtitle">TORNEO INTERACTIVO DE QUÍMICA</p>
     </header>
 
     <!-- 1. LOGIN / UNIRSE AL JUEGO -->
     <section id="seccion-login" class="panel-card">
       <div class="grid-login">
-        <!-- CREAR SALA -->
         <div class="sub-panel host-panel">
           <h2>👑 ANFITRIÓN</h2>
-          <p class="panel-desc">Crea una sala nueva para dirigir el concurso</p>
-          <button id="btn-crear-sala" class="btn btn-primary glow-primary">🚀 Crear Sala de Concurso</button>
+          <p class="panel-desc">Crea una sala para proyectar el ranking</p>
+          <button id="btn-crear-sala" class="btn btn-primary glow-primary">🚀 Crear Nueva Sala</button>
         </div>
 
-        <div class="divider"><span>O</span></div>
+        <div class="divider"><span>VS</span></div>
 
-        <!-- FORMULARIO DE INGRESO DE JUGADORES -->
         <div class="sub-panel player-panel">
-          <h2>🎮 UNIRSE A UNA SALA</h2>
-          <p class="panel-desc">Ingresa tu apodo y el código de la sala para competir</p>
+          <h2>🎮 JUGADOR</h2>
+          <p class="panel-desc">Entra con tus datos para responder en vivo</p>
 
           <div class="input-group">
-            <label>Tu Apodo / Nombre:</label>
+            <label>Tu Nickname:</label>
             <input type="text" id="input-nickname" placeholder="Ej. ProGamer123" maxlength="15" autocomplete="off">
           </div>
 
@@ -43,92 +41,90 @@
             <input type="text" id="input-codigo" placeholder="Ej. 123456" maxlength="6" autocomplete="off">
           </div>
 
-          <button id="btn-unirse" class="btn btn-secondary glow-secondary">⚡ Entrar al Concurso</button>
+          <button id="btn-unirse" class="btn btn-secondary glow-secondary">⚡ Unirse a la Partida</button>
         </div>
       </div>
       <p id="mensaje-error" class="error-msg"></p>
     </section>
 
-    <!-- 2. LOBBY Y SALA DE ESPERA (REGLAS VISIBLES AQUÍ) -->
+    <!-- 2. LOBBY Y REGLAS -->
     <section id="seccion-lobby" class="panel-card hidden">
       <div class="lobby-header">
         <h2>SALA DE ESPERA</h2>
         <div class="room-code-badge">
-          <span>CÓDIGO DE SALA:</span>
+          <span>SALA:</span>
           <strong id="lobby-codigo-display">------</strong>
         </div>
       </div>
 
-      <!-- REGLAS OFICIALES VISIBLES EN EL LOBBY -->
+      <!-- REGLAS FIJAS EN EL LOBBY -->
       <div class="rules-banner">
-        <h3>📜 REGLAS OFICIALES DEL CONCURSO</h3>
+        <h3>📜 REGLAS DEL JUEGO</h3>
         <ul>
-          <li>🎯 **Trios Perfectos:** Junta 3 cartas correspondientes al mismo elemento (**Nombre + Símbolo + Valencia**) para ganar **10 Puntos**.</li>
-          <li>💣 **Cartas de Poder:** Ten cuidado con las cartas especiales (**Bomba** y **Tornado**).</li>
+          <li>🔥 **Tríos Perfectos (+100 PTS):** Junta **Nombre + Símbolo + Valencia** del mismo elemento.</li>
+          <li>⚠️ Si te equivocas en alguna carta del trío, las cartas se voltearán de nuevo en 1.5 segundos.</li>
         </ul>
       </div>
 
-      <!-- CONFIGURACIÓN SOLO VISIBLE PARA EL ANFITRIÓN -->
+      <!-- CONFIGURACIÓN DEL ANFITRIÓN CON FILTRO DE FAMILIAS -->
       <div id="panel-anfitrion-config" class="config-container hidden">
-        <h3>⚙️ CONFIGURACIÓN DEL TORNEO</h3>
+        <h3>⚙️ CONFIGURACIÓN Y FAMILIAS DE METALES</h3>
         
         <div class="config-grid">
           <div class="input-group">
             <label>Nombre del Concurso:</label>
-            <input type="text" id="input-nombre-concurso" value="Torneo de Valencias Química">
+            <input type="text" id="input-nombre-concurso" value="Torneo Química Pro">
           </div>
 
           <div class="input-group">
-            <label>Duración (Segundos):</label>
+            <label>Tiempo (Segundos):</label>
             <input type="number" id="input-duracion" value="120" min="30" max="600">
           </div>
         </div>
 
-        <div class="input-group">
-          <label>Elementos en Tablero (Límite: 42 Metales de la Tabla):</label>
-          <div class="slider-container">
-            <input type="range" id="input-num-elementos" min="4" max="42" value="8" step="1">
-            <span id="display-num-elementos" class="badge-count">8 Elementos (26 Cartas)</span>
-          </div>
+        <label class="label-section">Familias de Metales Permitidas en la Partida:</label>
+        <div id="contenedor-familias" class="checkbox-grid">
+          <label><input type="checkbox" value="monovalentes" checked> Monovalentes (+1)</label>
+          <label><input type="checkbox" value="divalentes" checked> Divalentes (+2)</label>
+          <label><input type="checkbox" value="trivalentes" checked> Trivalentes (+3)</label>
+          <label><input type="checkbox" value="variable_1_2" checked> Mono-Divalentes (+1,+2)</label>
+          <label><input type="checkbox" value="variable_2_3" checked> Di-Trivalentes (+2,+3)</label>
+          <label><input type="checkbox" value="polivalentes" checked> Polivalentes (+2,+3,+6...)</label>
         </div>
       </div>
 
       <div class="lobby-content">
-        <h3>CONCURSANTES CONECTADOS</h3>
+        <h3>JUGADORES CONECTADOS</h3>
         <ul id="lista-jugadores" class="players-grid"></ul>
       </div>
 
-      <!-- BOTÓN INICIAR SOLO PARA ANFITRIÓN -->
       <div id="panel-anfitrion-controles" class="lobby-actions hidden">
-        <button id="btn-iniciar-concurso" class="btn btn-action glow-action">🔥 ¡INICIAR CONCURSO AHORA!</button>
+        <button id="btn-iniciar-concurso" class="btn btn-action glow-action">🔥 ¡INICIAR PARTIDA!</button>
       </div>
 
-      <!-- PANTALLA DE ESPERA PARA JUGADORES -->
       <div id="pantalla-espera-concursante" class="waiting-banner hidden">
         <div class="spinner"></div>
-        <p>Esperando a que el anfitrión inicie la partida...</p>
+        <p>El anfitrión iniciará el concurso en breve...</p>
       </div>
     </section>
 
-    <!-- 3. PANTALLA DE JUEGO / VISTA DEL CREADOR O JUGADOR -->
+    <!-- 3. PANTALLA DE JUEGO -->
     <section id="seccion-juego" class="panel-card hidden">
       <div class="game-header">
-        <div class="game-info">
-          <h2 id="juego-titulo-display">CONCURSO DE QUÍMICA</h2>
-          <div class="timer-box">⏱️ TIEMPO: <strong id="cronometro">00:00</strong></div>
-        </div>
+        <h2 id="juego-titulo-display">CONCURSO DE QUÍMICA</h2>
+        <div class="timer-box">⏱️ TIEMPO: <strong id="cronometro">00:00</strong></div>
       </div>
 
-      <!-- VISTA PARA EL CREADOR (SOLO RANKING) -->
+      <!-- VISTA SOLO CREADOR (RANKING DESTACADO) -->
       <div id="vista-anfitrion" class="host-view-panel hidden">
-        <h2 class="ranking-title">🏆 RANKING EN VIVO 🏆</h2>
+        <h2 class="ranking-title">🏆 LEADERBOARD EN VIVO 🏆</h2>
         <div id="ranking-anfitrion-lista" class="ranking-big-list"></div>
       </div>
 
-      <!-- VISTA PARA PARTICIPANTES (TABLERO INTERACTIVO) -->
+      <!-- VISTA SOLO JUGADORES (TABLERO DE 4 COLUMNAS) -->
       <div id="vista-jugador" class="player-view-panel hidden">
         <div id="leaderboard-mini" class="leaderboard-bar"></div>
-        <div id="tablero-cartas" class="board-grid"></div>
+        <div id="tablero-cartas" class="board-grid-4col"></div>
       </div>
     </section>
   </main>
