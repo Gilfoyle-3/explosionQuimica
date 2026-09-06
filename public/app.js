@@ -1,5 +1,60 @@
 const socket = io();
 
+// SISTEMA DE AUDIO SINTETIZADO CON WEB AUDIO API
+const AudioFX = {
+  ctx: null,
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  },
+  playFlip() {
+    this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.08);
+  },
+  playMatch() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.setValueAtTime(659.25, now + 0.1);
+    osc.frequency.setValueAtTime(783.99, now + 0.2);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(now + 0.35);
+  },
+  playBomb() {
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(now + 0.4);
+  }
+};
+
 // BASE DE DATOS COMPLETA DE ELEMENTOS QUÍMICOS Y SUS VALENCIAS
 const ELEMENT_DATABASE = [
   // --- METALES DE VALENCIA FIJA ---
@@ -112,7 +167,7 @@ function iniciarConcurso() {
   }
 }
 
-// EVENTOS DE SOCKET
+// EVENTOS SOCKET
 socket.on('roomCreated', ({ roomId }) => {
   salaActual = roomId;
   document.getElementById('codigo-display').innerText = roomId;
@@ -128,8 +183,7 @@ socket.on('playerJoined', ({ players }) => {
       return `
         <div class="player-card-lobby">
           <div class="player-avatar">${initial}</div>
-          <div class="player-name-lobby">${p.name}</div>
-          <span class="player-status-badge">Conectado</span>
+          <div style="font-weight:700; font-size:0.9rem">${p.name}</div>
         </div>
       `;
     }).join('');
@@ -167,7 +221,7 @@ socket.on('gameOver', ({ players }) => {
 
 socket.on('errorMsg', (msg) => alert(msg));
 
-// RENDERIZADO DEL TABLERO
+// RENDERIZADO TABLERO
 function renderBoard(deck) {
   const boardEl = document.getElementById('tablero');
   boardEl.innerHTML = '';
@@ -197,6 +251,8 @@ function renderBoard(deck) {
 
 function handleCardClick(cardEl, cardData, idx) {
   if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched') || cardEl.classList.contains('power-used') || flippedCards.length >= 3) return;
+
+  AudioFX.playFlip();
 
   if (cardData.type === 'power_bomb') {
     activarBomba(idx);
@@ -245,6 +301,7 @@ function checkTrioMatch() {
   }
 
   if (isMatch) {
+    AudioFX.playMatch();
     setTimeout(() => {
       flippedCards.forEach(c => {
         c.element.classList.add('matched');
@@ -272,8 +329,8 @@ function checkTrioMatch() {
   }
 }
 
-// ACTIVACIÓN Y DESAPARICIÓN DE POWER-UPS
 function activarBomba(index) {
+  AudioFX.playBomb();
   const allCards = document.querySelectorAll('.card');
   const cols = 4;
   
@@ -312,6 +369,7 @@ function activarBomba(index) {
 }
 
 function activarTornado(index) {
+  AudioFX.playBomb();
   const allCards = document.querySelectorAll('.card');
   if (allCards[index]) {
     allCards[index].classList.add('power-used');
@@ -339,7 +397,6 @@ function activarTornado(index) {
   }, 400);
 }
 
-// RANKING REDISEÑADO CON PODIOS ESPORTS
 function actualizarTablaRanking(players) {
   const container = document.getElementById('tabla-ranking');
   if (!container) return;
@@ -356,14 +413,14 @@ function actualizarTablaRanking(players) {
 
     return `
       <div class="ranking-card ${topClass}">
-        <div class="rank-left">
+        <div style="display:flex; align-items:center; gap:12px;">
           <div class="rank-badge">${medal}</div>
-          <div class="rank-info">
-            <span class="rank-name">${p.name}</span>
-            <span class="rank-sub">Puesto ${pos}</span>
+          <div>
+            <div style="font-weight:800; font-size:1.05rem">${p.name}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted)">Puesto ${pos}</div>
           </div>
         </div>
-        <div class="rank-score-pill">${p.points} <span style="font-size: 0.7rem;">PTS</span></div>
+        <div class="rank-score-pill">${p.points} PTS</div>
       </div>
     `;
   }).join('');
