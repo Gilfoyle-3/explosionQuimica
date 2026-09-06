@@ -98,15 +98,14 @@ function getSortedPlayers(room) {
 
 io.on('connection', (socket) => {
   
-  socket.on('create_room', ({ title, duration, selectedCategories }) => {
+  socket.on('create_room', ({ title, duration, selectedCategories, elementLimit }) => {
     const roomCode = generateCode();
     
-    // Filtra por las categorías seleccionadas y baraja
     let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
     filteredPool.sort(() => 0.5 - Math.random());
 
-    // Selecciona exactamente un rango de 16 elementos (o menos si el total elegido es menor)
-    const pool = filteredPool.slice(0, 16);
+    const limit = parseInt(elementLimit) || 8;
+    const pool = filteredPool.slice(0, limit);
     
     rooms[roomCode] = {
       title,
@@ -130,7 +129,7 @@ io.on('connection', (socket) => {
     room.players[socket.id] = { name, score: 0 };
     socket.join(roomCode);
 
-    socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id });
+    socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id, isHost: false });
     
     const playerList = getSortedPlayers(room);
     io.to(roomCode).emit('update_player_list', playerList);
