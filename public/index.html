@@ -2,151 +2,148 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CHEM-TRIOS // CYBERPUNK EDITION</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChemMemory - Concurso de Valencias</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
 <body>
 
-  <div class="cyber-grid"></div>
+  <div class="cyber-grid-bg"></div>
 
-  <div class="app-container">
+  <div id="app" class="container">
     
-    <!-- MENÚ PRINCIPAL -->
-    <div id="view-main-menu" class="view active">
-      <div class="hero">
-        <h1 class="neon-title">CHEM<span>//</span>TRIOS</h1>
-        <p>[ SISTEMA NEURONAL DE VALENCIAS QUÍMICAS ]</p>
-      </div>
-
-      <div class="menu-cards">
-        <div class="card-btn cyan" onclick="switchView('view-config-room')">
-          <span class="badge">HOST</span>
-          <h2>⚡ CREAR SALA</h2>
-          <p>Personaliza elementos, tiempos y despliega la partida.</p>
-        </div>
-
-        <div class="card-btn magenta" onclick="switchView('view-join-room')">
-          <span class="badge">PLAYER</span>
-          <h2>🔗 UNIRSE A RED</h2>
-          <p>Conéctate usando el código de acceso de 6 dígitos.</p>
+    <!-- VISTA 1: INICIO -->
+    <div id="view-home" class="view active">
+      <div class="card-box cyber-glow">
+        <h1 class="glitch-title">CHEM<span class="text-cyan">MEMORY</span></h1>
+        <p class="subtitle">Desafío interactivo de tablas de valencias químicas</p>
+        
+        <div class="menu-actions">
+          <button class="btn btn-cyan btn-large" onclick="switchView('view-create')">⚡ CREAR PARTIDA</button>
+          <button class="btn btn-purple btn-large" onclick="switchView('view-join')">🚀 UNIRSE A PARTIDA</button>
         </div>
       </div>
     </div>
 
-    <!-- CONFIGURACIÓN DE SALA Y SELECCIÓN DE ELEMENTOS -->
-    <div id="view-config-room" class="view">
-      <button class="btn-back" onclick="switchView('view-main-menu')">◀ [ VOLVER AL MENÚ ]</button>
-      <h2>// CONFIGURACIÓN Y SELECCIÓN DE VALENCIAS</h2>
-      
-      <div class="form-group">
-        <label>NOMBRE DEL NODO / CONCURSO:</label>
-        <input type="text" id="create-title" placeholder="Ej: Hackatón Química 3A">
-
-        <div class="form-row">
-          <div>
-            <label>DURACIÓN (MIN):</label>
-            <input type="number" id="create-duration" value="5" min="1" max="30">
-          </div>
-          <div>
-            <label>ESTADO:</label>
-            <div class="counter-display" id="selected-count-badge">24 Elementos (72 Cartas)</div>
-          </div>
+    <!-- VISTA 2: CREAR SALA -->
+    <div id="view-create" class="view">
+      <div class="card-box cyber-glow">
+        <h2>⚡ CONFIGURAR NUEVO NODO</h2>
+        
+        <div class="input-group">
+          <label>Título del Concurso</label>
+          <input type="text" id="create-title" value="Química Master" placeholder="Ej. Examen Parcial">
         </div>
 
-        <div class="elements-config-header">
-          <label>SELECCIONA QUÉ ELEMENTOS ENTRARÁN AL CONCURSO:</label>
-          <div class="quick-selectors">
-            <button type="button" class="btn-tiny" onclick="toggleAllElements(true)">Marcar Todos</button>
-            <button type="button" class="btn-tiny" onclick="toggleAllElements(false)">Desmarcar Todos</button>
-          </div>
+        <div class="input-group">
+          <label>Duración (Minutos)</label>
+          <select id="create-duration">
+            <option value="3">3 Minutos</option>
+            <option value="5" selected>5 Minutos</option>
+            <option value="10">10 Minutos</option>
+            <option value="15">15 Minutos</option>
+          </select>
         </div>
 
-        <!-- GRILLA DE SELECCIÓN DE ELEMENTOS -->
-        <div class="elements-grid-selector" id="elements-selector-container">
-          <!-- Se inyecta dinámicamente vía JS -->
+        <div class="input-group">
+          <label>Categorías Activas (Haz clic para activar/desactivar)</label>
+          <div id="elements-selector-container" class="elements-grid"></div>
         </div>
 
-        <button class="btn btn-cyan btn-large" onclick="handleCreateRoom()">⚡ INICIALIZAR SALA DE JUEGO</button>
+        <div class="input-group">
+          <label>Límite Manual de Elementos en Tablero</label>
+          <input type="number" id="create-limit" min="1" value="16">
+          <small style="color: var(--text-muted); display: block; margin-top: 4px;">* Las cartas totales serán el triple de este número más comodines.</small>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="switchView('view-home')">◀ VOLVER</button>
+          <button class="btn btn-cyan" onclick="handleCreateRoom()">INICIALIZAR SALA ▶</button>
+        </div>
       </div>
     </div>
 
-    <!-- UNIRSE A SALA -->
-    <div id="view-join-room" class="view">
-      <button class="btn-back" onclick="switchView('view-main-menu')">◀ [ VOLVER AL MENÚ ]</button>
-      <h2>// CONEXIÓN A LA RED</h2>
+    <!-- VISTA 3: UNIRSE A SALA -->
+    <div id="view-join" class="view">
+      <div class="card-box cyber-glow">
+        <h2>🚀 CONECTARSE A SALA</h2>
+        
+        <div class="input-group">
+          <label>Tu Nickname</label>
+          <input type="text" id="join-name" placeholder="Ej. ElectronVoltio">
+        </div>
 
-      <div class="form-group">
-        <label>TU NICKNAME (HACKER TAG):</label>
-        <input type="text" id="join-name" placeholder="Ej: CyberQuimico_01">
+        <div class="input-group">
+          <label>Código de Sala (6 Dígitos)</label>
+          <input type="text" id="join-code" placeholder="123456" maxlength="6">
+        </div>
 
-        <label>CÓDIGO DE SALA (6 DÍGITOS):</label>
-        <input type="text" id="join-code" placeholder="123456" maxlength="6">
-
-        <button class="btn btn-magenta btn-large" onclick="handleJoinRoom()">🌐 CONECTAR A LA PARTIDA</button>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="switchView('view-home')">◀ VOLVER</button>
+          <button class="btn btn-purple" onclick="handleJoinRoom()">CONECTARSE ▶</button>
+        </div>
       </div>
     </div>
 
-    <!-- LOBBY CREADOR -->
+    <!-- VISTA 4: LOBBY DEL HOST -->
     <div id="view-host-lobby" class="view">
-      <h2>// CÓDIGO DE ACCESO DE LA SALA</h2>
-      <div class="room-code-badge" id="host-code-display">------</div>
-
-      <div class="leaderboard-box">
-        <div class="lb-header">
-          <h3>HACKERS CONECTADOS</h3>
-          <span id="player-count" class="count-badge">0</span>
+      <div class="card-box cyber-glow">
+        <h2>📡 SALA DE ESPERA (HOST)</h2>
+        <div class="code-badge">CÓDIGO: <span id="host-code-display" class="text-cyan">------</span></div>
+        
+        <div class="players-container">
+          <h3>Participantes Conectados (<span id="player-count">0</span>)</h3>
+          <ul id="host-player-list" class="cyber-list"></ul>
         </div>
-        <ul id="host-player-list" class="leaderboard-list"></ul>
-      </div>
 
-      <button class="btn btn-cyan btn-large" onclick="handleStartGame()">🚀 LANZAR PARTIDA AHORA</button>
+        <button class="btn btn-cyan btn-large" onclick="handleStartGame()" style="margin-top: 20px;">⚡ INICIAR DESAFÍO AHORA</button>
+      </div>
     </div>
 
-    <!-- SALA DE ESPERA JUGADOR -->
+    <!-- VISTA 5: ESPERA JUGADOR -->
     <div id="view-player-waiting" class="view">
-      <div class="waiting-card">
-        <div class="cyber-spinner"></div>
-        <h2>ESTABLECIENDO ENLACE...</h2>
-        <p>Esperando a que el Host inicie el concurso en la red...</p>
+      <div class="card-box cyber-glow text-center">
+        <h2>⏳ ESPERANDO INICIO</h2>
+        <p class="text-cyan" style="margin: 15px 0;">Te has conectado correctamente a la red.</p>
+        <p class="text-muted">El creador iniciará la partida en cualquier momento. ¡Prepara tu mente!</p>
       </div>
     </div>
 
-    <!-- PANTALLA HOST EN VIVO -->
+    <!-- VISTA 6: PARTIDA EN VIVO (HOST) -->
     <div id="view-host-live" class="view">
-      <div class="live-header">
-        <h2>🏆 RANKING EN VIVO</h2>
-        <div class="timer-badge">⏱️ <span id="host-timer">00:00</span></div>
-      </div>
-      
-      <div class="leaderboard-box full-size">
-        <ul id="host-live-leaderboard" class="leaderboard-list"></ul>
+      <div class="card-box cyber-glow">
+        <div class="live-header">
+          <h2>📊 PANEL DE CONTROL EN VIVO</h2>
+          <div id="host-timer" class="timer-badge">05:00</div>
+        </div>
+        
+        <div class="players-container" style="margin-top: 20px;">
+          <h3>Ranking en Tiempo Real (<span id="player-count">0</span>)</h3>
+          <ul id="host-live-leaderboard" class="cyber-list"></ul>
+        </div>
       </div>
     </div>
 
-    <!-- TABLERO DE JUEGO -->
+    <!-- VISTA 7: TABLERO DE JUEGO (JUGADOR) -->
     <div id="view-player-game" class="view">
-      <div class="game-header">
-        <div>⏱️ <span id="player-timer">00:00</span></div>
-        <div>⚡ <span id="player-score">0</span> PTS</div>
+      <div class="game-top-bar">
+        <div class="score-board">PUNTOS: <span id="player-score" class="text-yellow">0</span></div>
+        <div id="player-timer" class="timer-badge">05:00</div>
       </div>
 
       <div class="game-layout">
-        <div class="cards-grid" id="board-grid"></div>
+        <div id="board-grid" class="board-grid"></div>
         
-        <div class="leaderboard-box sidebar-lb">
-          <div class="lb-header">
-            <h3>RANKING</h3>
-            <span id="game-player-count" class="count-badge">0</span>
-          </div>
-          <ul id="player-live-leaderboard" class="leaderboard-list"></ul>
+        <div class="game-sidebar">
+          <h3>🏆 RANKING</h3>
+          <ul id="player-live-leaderboard" class="cyber-list"></ul>
         </div>
       </div>
     </div>
 
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
