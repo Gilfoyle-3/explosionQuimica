@@ -4,109 +4,150 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.static('public'));
 
-const rooms = {};
+// Base de Datos de Elementos Químicos
+const DB_ELEMENTOS = [
+  { nombre: 'Hidrógeno', simbolo: 'H', valencia: '+1', categoria: 'monovalentes' },
+  { nombre: 'Sodio', simbolo: 'Na', valencia: '+1', categoria: 'monovalentes' },
+  { nombre: 'Potasio', simbolo: 'K', valencia: '+1', categoria: 'monovalentes' },
+  { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2', categoria: 'divalentes' },
+  { nombre: 'Magnesio', simbolo: 'Mg', valencia: '+2', categoria: 'divalentes' },
+  { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3', categoria: 'trivalentes' },
+  { nombre: 'Hierro (II)', simbolo: 'Fe', valencia: '+2', categoria: 'polivalentes' },
+  { nombre: 'Hierro (III)', simbolo: 'Fe', valencia: '+3', categoria: 'polivalentes' },
+  { nombre: 'Cobre (I)', simbolo: 'Cu', valencia: '+1', categoria: 'polivalentes' },
+  { nombre: 'Cobre (II)', simbolo: 'Cu', valencia: '+2', categoria: 'polivalentes' },
+  { nombre: 'Oxígeno', simbolo: 'O', valencia: '-2', categoria: 'no_metales' },
+  { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1', categoria: 'no_metales' }
+];
 
-function generarCodigo() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-function generarMazo(elementos) {
-  let deck = [];
-  // Selecciona hasta 8 elementos al azar para un tablero más grande y variado
-  const cantidadElementos = Math.min(elementos.length, 8);
-  const seleccionados = [...elementos].sort(() => Math.random() - 0.5).slice(0, cantidadElementos);
-
-  seleccionados.forEach((elem, index) => {
-    deck.push({ idElem: index, type: 'symbol', content: elem.symbol, valences: elem.val, matched: false });
-    deck.push({ idElem: index, type: 'name', content: elem.name, valences: elem.val, matched: false });
-    deck.push({ idElem: index, type: 'valence', content: elem.val, valences: elem.val, matched: false });
-  });
-
-  // Power-ups incluidos en la mezcla
-  deck.push({ type: 'power_bomb', content: '💣', matched: false });
-  deck.push({ type: 'power_tornado', content: '🌪️', matched: false });
-
-  return deck.sort(() => Math.random() - 0.5);
-}
+// Estructura de Salas activas
+const salas = {};
 
 io.on('connection', (socket) => {
-  socket.on('createRoom', ({ nombre, tiempo }) => {
-    const roomId = generarCodigo();
-    rooms[roomId] = {
-      nombre,
-      tiempo: parseInt(tiempo) || 60,
-      hostId: socket.id,
-      players: [],
-      state: 'waiting'
+  console.log(`Cliente conectado: ${socket.id}`);
+
+  // 1. CREAR SALA (Anfitrión)
+  socket.on('crear_sala', ({ numElementos }) => {
+    const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
+    const elementosCount = parseInt(numElementos) || 8;
+
+    salas[codigoSala] = {
+      anfitrion: socket.id,
+      estado: 'esperando', // 'esperando' o 'jugando'
+      numElementos: elementosCount,
+      jugadores: [],
+      tablero: [],
+      puntuaciones: {}
     };
-    socket.join(roomId);
-    socket.emit('roomCreated', { roomId });
+
+    socket.join(codigoSala);
+    socket.emit('sala_creada', { codigoSala, numElementos: elementosCount });
   });
 
-  socket.on('joinRoom', ({ roomId, playerName }) => {
-    const room = rooms[roomId];
-    if (!room) {
-      socket.emit('errorMsg', 'La sala no existe o venció.');
-      return;
+  // 2. UNIRSE A SALA (Jugador)
+  socket.on('unirse_sala', ({ codigoSala, nickname }) => {
+    const sala = salas[codigoSala];
+
+    if (!sala) {
+      return socket.emit('error_login', 'La sala no existe.');
     }
 
-    const nuevoJugador = { id: socket.id, name: playerName, points: 0 };
-    room.players.push(nuevoJugador);
-    socket.join(roomId);
-
-    io.to(roomId).emit('playerJoined', { players: room.players });
-  });
-
-  socket.on('startGameHost', ({ roomId, elements }) => {
-    const room = rooms[roomId];
-    if (!room) return;
-
-    room.state = 'playing';
-    const deck = generarMazo(elements);
-
-    io.to(roomId).emit('gameStart', { deck, tiempo: room.tiempo });
-
-    let tiempoRestante = room.tiempo;
-    room.timer = setInterval(() => {
-      tiempoRestante--;
-      io.to(roomId).emit('timerUpdate', { tiempoRestante });
-
-      if (tiempoRestante <= 0) {
-        clearInterval(room.timer);
-        room.state = 'ended';
-        io.to(roomId).emit('gameOver', { players: room.players });
-      }
-    }, 1000);
-  });
-
-  socket.on('updateScore', ({ roomId, points }) => {
-    const room = rooms[roomId];
-    if (!room) return;
-
-    const player = room.players.find(p => p.id === socket.id);
-    if (player) {
-      player.points = points;
-      room.players.sort((a, b) => b.points - a.points);
-      io.to(roomId).emit('rankingUpdate', { players: room.players });
+    if (sala.estado !== 'esperando') {
+      return socket.emit('error_login', 'El concurso ya ha iniciado.');
     }
+
+    // Validación de nombres duplicados
+    const nombreExiste = sala.jugadores.some(
+      (j) => j.nickname.toLowerCase() === nickname.trim().toLowerCase()
+    );
+
+    if (nombreExiste) {
+      return socket.emit('error_login', 'Ese nombre ya está en uso en esta sala. Elige otro.');
+    }
+
+    // Agregar jugador a la sala de espera
+    const nuevoJugador = { id: socket.id, nickname: nickname.trim(), puntos: 0 };
+    sala.jugadores.push(nuevoJugador);
+    sala.puntuaciones[socket.id] = { nickname: nickname.trim(), puntos: 0 };
+
+    socket.join(codigoSala);
+    socket.emit('unido_exitosamente', { codigoSala, nickname: nickname.trim() });
+
+    // Notificar a todos en la sala la lista actualizada de espera
+    io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
   });
 
+  // 3. INICIAR CONCURSO (Solo el anfitrión)
+  socket.on('iniciar_concurso', ({ codigoSala }) => {
+    const sala = salas[codigoSala];
+    if (!sala || sala.anfitrion !== socket.id) return;
+
+    if (sala.jugadores.length === 0) {
+      return socket.emit('error_inicio', 'No hay jugadores en la sala de espera.');
+    }
+
+    // Generar cartas según la cantidad de elementos elegida
+    sala.tablero = generarTablero(sala.numElementos);
+    sala.estado = 'jugando';
+
+    // Enviar el inicio del juego a todos los miembros de la sala
+    io.to(codigoSala).emit('concurso_iniciado', {
+      tablero: sala.tablero,
+      puntuaciones: sala.puntuaciones
+    });
+  });
+
+  // 4. DESCONEXIÓN
   socket.on('disconnect', () => {
-    for (const roomId in rooms) {
-      const room = rooms[roomId];
-      const index = room.players.findIndex(p => p.id === socket.id);
+    for (const codigo in salas) {
+      const sala = salas[codigo];
+      const index = sala.jugadores.findIndex((j) => j.id === socket.id);
+
       if (index !== -1) {
-        room.players.splice(index, 1);
-        io.to(roomId).emit('rankingUpdate', { players: room.players });
+        sala.jugadores.splice(index, 1);
+        delete sala.puntuaciones[socket.id];
+
+        if (sala.estado === 'esperando') {
+          io.to(codigo).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
+        } else {
+          io.to(codigo).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
+        }
         break;
       }
     }
   });
 });
 
+// Función para generar las cartas aleatorias según la cantidad de elementos seleccionada
+function generarTablero(cantidadElementos) {
+  // Mezclar base de datos y seleccionar N elementos
+  const shuffledDB = [...DB_ELEMENTOS].sort(() => 0.5 - Math.random());
+  const seleccionados = shuffledDB.slice(0, Math.min(cantidadElementos, DB_ELEMENTOS.length));
+
+  let cartas = [];
+  let cardId = 1;
+
+  seleccionados.forEach((elem) => {
+    const grupoId = elem.nombre;
+
+    cartas.push({ id: cardId++, tipo: 'nombre', contenido: elem.nombre, grupoId, revelada: false, emparejada: false });
+    cartas.push({ id: cardId++, tipo: 'simbolo', contenido: elem.simbolo, grupoId, revelada: false, emparejada: false });
+    cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
+  });
+
+  // Agregar cartas de poder
+  cartas.push({ id: cardId++, tipo: 'poder', contenido: 'BOMBA', efecto: 'bomba', revelada: false, emparejada: false });
+  cartas.push({ id: cardId++, tipo: 'poder', contenido: 'TORNADO', efecto: 'tornado', revelada: false, emparejada: false });
+
+  // Barajar todo el mazo
+  return cartas.sort(() => 0.5 - Math.random());
+}
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor activo en el puerto ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor ejecutándose en http://localhost:${PORT}`));
