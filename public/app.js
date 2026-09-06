@@ -1,40 +1,38 @@
 const socket = io();
 
-// BASE DE DATOS COMPLETA DE VALENCIAS QUÍMICAS
+// BASE DE DATOS CLASIFICADA POR CATEGORÍAS
 const ELEMENT_DATABASE = [
-  // --- METALES DE VALENCIA FIJA ---
-  { name: 'Hidrógeno', symbol: 'H', val: '+1' },
-  { name: 'Litio', symbol: 'Li', val: '+1' },
-  { name: 'Sodio', symbol: 'Na', val: '+1' },
-  { name: 'Potasio', symbol: 'K', val: '+1' },
-  { name: 'Plata', symbol: 'Ag', val: '+1' },
-  { name: 'Berilio', symbol: 'Be', val: '+2' },
-  { name: 'Magnesio', symbol: 'Mg', val: '+2' },
-  { name: 'Calcio', symbol: 'Ca', val: '+2' },
-  { name: 'Zinc', symbol: 'Zn', val: '+2' },
-  { name: 'Aluminio', symbol: 'Al', val: '+3' },
-  { name: 'Bismuto', symbol: 'Bi', val: '+3' },
+  // Monovalentes (+1)
+  { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
+  { cat: 'mono_fixed', name: 'Litio', symbol: 'Li', val: '+1' },
+  { cat: 'mono_fixed', name: 'Sodio', symbol: 'Na', val: '+1' },
+  { cat: 'mono_fixed', name: 'Potasio', symbol: 'K', val: '+1' },
+  { cat: 'mono_fixed', name: 'Plata', symbol: 'Ag', val: '+1' },
 
-  // --- METALES DE VALENCIA VARIABLE ---
-  { name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
-  { name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
-  { name: 'Oro', symbol: 'Au', val: '+1, +3' },
-  { name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
-  { name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
-  { name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
-  { name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
-  { name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
+  // Divalentes (+2)
+  { cat: 'di_fixed', name: 'Berilio', symbol: 'Be', val: '+2' },
+  { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
+  { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
+  { cat: 'di_fixed', name: 'Zinc', symbol: 'Zn', val: '+2' },
 
-  // --- NO METALES ---
-  { name: 'Flúor', symbol: 'F', val: '-1' },
-  { name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
-  { name: 'Bromo', symbol: 'Br', val: '-1, +1, +3, +5, +7' },
-  { name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
-  { name: 'Oxígeno', symbol: 'O', val: '-2' },
-  { name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
-  { name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
-  { name: 'Fósforo', symbol: 'P', val: '-3, +3, +5' },
-  { name: 'Carbono', symbol: 'C', val: '-4, +2, +4' }
+  // Trivalentes (+3)
+  { cat: 'tri_fixed', name: 'Aluminio', symbol: 'Al', val: '+3' },
+  { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
+
+  // Valencia Variable
+  { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
+  { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
+  { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
+  { cat: 'variable', name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
+
+  // No Metales
+  { cat: 'nometal', name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
+  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' },
+  { cat: 'nometal', name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
+  { cat: 'nometal', name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
+
+  // Anfóteros
+  { cat: 'anfotero', name: 'Manganeso', symbol: 'Mn', val: '+2, +3, +4, +6, +7' }
 ];
 
 let salaActual = null;
@@ -48,12 +46,23 @@ function mostrarSeccion(idSeccion) {
   if (target) target.classList.add('activa');
 }
 
+// Extrae solo los números para comparar "3", "+3", "3+" por igual
+function extractNumbers(str) {
+  const matches = str.match(/\d+/g);
+  return matches ? matches : [];
+}
+
 // CREAR SALA (HOST)
 function crearConcurso() {
   const nombre = document.getElementById('nombreConcurso').value || 'Torneo Química';
   const tiempo = document.getElementById('tiempoConcurso').value || 60;
+  
+  // Obtener categorías seleccionadas
+  const checkboxes = document.querySelectorAll('.cat-checkbox:checked');
+  const categorias = Array.from(checkboxes).map(cb => cb.value);
+
   esHost = true;
-  socket.emit('createRoom', { nombre, tiempo });
+  socket.emit('createRoom', { nombre, tiempo, categorias });
 }
 
 // UNIRSE A SALA (JUGADOR)
@@ -62,7 +71,7 @@ function unirseConcurso() {
   const codigo = document.getElementById('codigoIngreso').value;
 
   if (!alias || !codigo) {
-    alert('Por favor ingresa tu alias y el código de la sala.');
+    alert('Ingresa tu alias y el código de sala.');
     return;
   }
   esHost = false;
@@ -96,7 +105,6 @@ socket.on('gameStart', ({ deck, tiempo }) => {
   document.getElementById('mis-puntos').innerText = '0';
   document.getElementById('cronometro-jugador').innerText = `${tiempo}s`;
   document.getElementById('cronometro-host').innerText = `${tiempo}`;
-  document.getElementById('titulo-ranking').innerText = "RANKING EN TIEMPO REAL";
 
   if (esHost) {
     mostrarSeccion('pantalla-ranking');
@@ -117,15 +125,13 @@ socket.on('rankingUpdate', ({ players }) => {
 
 socket.on('gameOver', ({ players }) => {
   actualizarTablaRanking(players);
-  document.getElementById('titulo-ranking').innerText = "¡FIN DEL JUEGO!";
+  document.getElementById('titulo-ranking').innerText = "¡PARTIDA FINALIZADA!";
   mostrarSeccion('pantalla-ranking');
 });
 
-socket.on('errorMsg', (msg) => {
-  alert(msg);
-});
+socket.on('errorMsg', (msg) => alert(msg));
 
-// TABLERO Y LÓGICA DE VALENCIAS FLEXIBLES
+// RENDER Y LOGICA DE CARTAS (Símbolo grande, Nombre abajo)
 function renderBoard(deck) {
   const boardEl = document.getElementById('tablero');
   boardEl.innerHTML = '';
@@ -134,9 +140,10 @@ function renderBoard(deck) {
     const cardEl = document.createElement('div');
     cardEl.classList.add('card');
     cardEl.dataset.index = idx;
+
     cardEl.innerHTML = `
       <div class="symbol">?</div>
-      <div class="type-tag">TOCA PARA VER</div>
+      <div class="type-tag">TAP</div>
     `;
 
     cardEl.addEventListener('click', () => {
@@ -144,8 +151,8 @@ function renderBoard(deck) {
 
       cardEl.classList.add('flipped');
       cardEl.querySelector('.symbol').innerText = cardData.content;
-      cardEl.querySelector('.type-tag').innerText = cardData.type === 'element' ? cardData.sub : 'VALENCIA';
-      
+      cardEl.querySelector('.type-tag').innerText = cardData.sub;
+
       flippedCards.push({ element: cardEl, data: cardData });
 
       if (flippedCards.length === 2) {
@@ -157,24 +164,25 @@ function renderBoard(deck) {
   });
 }
 
+// VALIDACIÓN FLEXIBLE DE PAREJAS (Al + 3)
 function checkMatch() {
   const [c1, c2] = flippedCards;
 
-  // Lógica flexible: Una carta debe ser Elemento y la otra Valencia
   let isElement1 = c1.data.type === 'element';
   let isElement2 = c2.data.type === 'element';
 
   let matchSuccess = false;
 
-  // Deben ser uno de cada tipo (un Elemento y una Valencia)
+  // Se necesita un Elemento y una Valencia
   if (isElement1 !== isElement2) {
     const elementCard = isElement1 ? c1 : c2;
     const valenceCard = isElement1 ? c2 : c1;
 
-    // Verificar si la valencia seleccionada coincide con alguna de las del elemento
-    if (elementCard.data.validValences.includes(valenceCard.data.content.trim())) {
-      matchSuccess = true;
-    }
+    const elementNumbers = extractNumbers(elementCard.data.valences);
+    const selectedValenceNumbers = extractNumbers(valenceCard.data.content);
+
+    // Comprueba si los números coinciden (ejemplo: '3' está dentro de '+3')
+    matchSuccess = selectedValenceNumbers.some(num => elementNumbers.includes(num));
   }
 
   if (matchSuccess) {
@@ -196,9 +204,9 @@ function checkMatch() {
       c1.element.classList.remove('flipped');
       c2.element.classList.remove('flipped');
       c1.element.querySelector('.symbol').innerText = '?';
-      c1.element.querySelector('.type-tag').innerText = 'TOCA PARA VER';
+      c1.element.querySelector('.type-tag').innerText = 'TAP';
       c2.element.querySelector('.symbol').innerText = '?';
-      c2.element.querySelector('.type-tag').innerText = 'TOCA PARA VER';
+      c2.element.querySelector('.type-tag').innerText = 'TAP';
       flippedCards = [];
     }, 700);
   }
