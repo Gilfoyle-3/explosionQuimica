@@ -1,6 +1,6 @@
 const socket = io();
 
-// AUDIO SINTETIZADO WEB AUDIO API (EFECTOS DE SONIDO SIN MP3)
+// SISTEMA DE AUDIO SINTETIZADO (SOPORTE PARA MÓVILES Y NAVEGADORES)
 const AudioFX = {
   ctx: null,
   init() {
@@ -9,69 +9,146 @@ const AudioFX = {
     }
   },
   playFlip() {
-    this.init();
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(this.ctx.currentTime + 0.08);
+    try {
+      this.init();
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.08);
+    } catch (e) {}
   },
   playMatch() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(523.25, now);
-    osc.frequency.setValueAtTime(659.25, now + 0.1);
-    osc.frequency.setValueAtTime(783.99, now + 0.2);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(now + 0.35);
+    try {
+      this.init();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.1);
+      osc.frequency.setValueAtTime(783.99, now + 0.2);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(now + 0.35);
+    } catch (e) {}
   },
   playBomb() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start();
-    osc.stop(now + 0.4);
+    try {
+      this.init();
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(now + 0.4);
+    } catch (e) {}
   }
 };
 
-// BASE DE DATOS DE ELEMENTOS Y VALENCIAS
+// BASE DE DATOS COMPLETA DE ELEMENTOS Y VALENCIAS
+// BASE DE DATOS COMPLETA DE ELEMENTOS Y VALENCIAS
 const ELEMENT_DATABASE = [
+  // --- METALES: VALENCIA FIJA ---
+  // Monovalentes (+1)
   { cat: 'mono_fixed', name: 'Hidrógeno', symbol: 'H', val: '+1' },
   { cat: 'mono_fixed', name: 'Litio', symbol: 'Li', val: '+1' },
   { cat: 'mono_fixed', name: 'Sodio', symbol: 'Na', val: '+1' },
   { cat: 'mono_fixed', name: 'Potasio', symbol: 'K', val: '+1' },
+  { cat: 'mono_fixed', name: 'Rubidio', symbol: 'Rb', val: '+1' },
+  { cat: 'mono_fixed', name: 'Cesio', symbol: 'Cs', val: '+1' },
+  { cat: 'mono_fixed', name: 'Francio', symbol: 'Fr', val: '+1' },
   { cat: 'mono_fixed', name: 'Plata', symbol: 'Ag', val: '+1' },
-  { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
+  { cat: 'mono_fixed', name: 'Amonio', symbol: 'NH4', val: '+1' },
+
+  // Divalentes (+2)
+  { cat: 'di_fixed', name: 'Berilio', symbol: 'Be', val: '+2' },
   { cat: 'di_fixed', name: 'Magnesio', symbol: 'Mg', val: '+2' },
+  { cat: 'di_fixed', name: 'Calcio', symbol: 'Ca', val: '+2' },
+  { cat: 'di_fixed', name: 'Estroncio', symbol: 'Sr', val: '+2' },
+  { cat: 'di_fixed', name: 'Bario', symbol: 'Ba', val: '+2' },
+  { cat: 'di_fixed', name: 'Radio', symbol: 'Ra', val: '+2' },
   { cat: 'di_fixed', name: 'Zinc', symbol: 'Zn', val: '+2' },
+  { cat: 'di_fixed', name: 'Cadmio', symbol: 'Cd', val: '+2' },
+
+  // Trivalentes (+3)
   { cat: 'tri_fixed', name: 'Aluminio', symbol: 'Al', val: '+3' },
+  { cat: 'tri_fixed', name: 'Galio', symbol: 'Ga', val: '+3' },
+  { cat: 'tri_fixed', name: 'Indio', symbol: 'In', val: '+3' },
+  { cat: 'tri_fixed', name: 'Bismuto', symbol: 'Bi', val: '+3' },
+
+  // Tetravalentes (+4)
+  { cat: 'tetra_fixed', name: 'Circonio', symbol: 'Zr', val: '+4' },
+  { cat: 'tetra_fixed', name: 'Titanio', symbol: 'Ti', val: '+4' },
+
+  // Hexavalentes (+6)
+  { cat: 'hexa_fixed', name: 'Uranio', symbol: 'U', val: '+6' },
+  { cat: 'hexa_fixed', name: 'Wolframio', symbol: 'W', val: '+6' },
+
+  // --- METALES: VALENCIA VARIABLE ---
+  // Mono-Divalentes (+1, +2)
   { cat: 'variable', name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
-  { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
+  { cat: 'variable', name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
+
+  // Mono-Trivalentes (+1, +3)
   { cat: 'variable', name: 'Oro', symbol: 'Au', val: '+1, +3' },
+  { cat: 'variable', name: 'Talio', symbol: 'Tl', val: '+1, +3' },
+
+  // Di-Trivalentes (+2, +3)
+  { cat: 'variable', name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
+  { cat: 'variable', name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
+  { cat: 'variable', name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
+
+  // Di-Tetravalentes (+2, +4)
+  { cat: 'variable', name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
+  { cat: 'variable', name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
+  { cat: 'variable', name: 'Platino', symbol: 'Pt', val: '+2, +4' },
+
+  // Tri-Tetravalentes (+3, +4)
+  { cat: 'variable', name: 'Cerio', symbol: 'Ce', val: '+3, +4' },
+
+  // Tri-Pentavalentes (+3, +5)
+  { cat: 'variable', name: 'Sustancia Vanadio', symbol: 'V', val: '+3, +5' },
+
+  // --- NO METALES ---
+  // Halógenos (-1 | +1, +3, +5, +7)
   { cat: 'nometal', name: 'Flúor', symbol: 'F', val: '-1' },
   { cat: 'nometal', name: 'Cloro', symbol: 'Cl', val: '-1, +1, +3, +5, +7' },
-  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' }
+  { cat: 'nometal', name: 'Bromo', symbol: 'Br', val: '-1, +1, +3, +5, +7' },
+  { cat: 'nometal', name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
+
+  // Anfígenos / Calcógenos (-2 | +2, +4, +6)
+  { cat: 'nometal', name: 'Oxígeno', symbol: 'O', val: '-2' },
+  { cat: 'nometal', name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
+  { cat: 'nometal', name: 'Selenio', symbol: 'Se', val: '-2, +2, +4, +6' },
+  { cat: 'nometal', name: 'Teluro', symbol: 'Te', val: '-2, +2, +4, +6' },
+
+  // Nitrogenoides (-3 | +3, +5)
+  { cat: 'nometal', name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
+  { cat: 'nometal', name: 'Fósforo', symbol: 'P', val: '-3, +3, +5' },
+  { cat: 'nometal', name: 'Arsénico', symbol: 'As', val: '-3, +3, +5' },
+  { cat: 'nometal', name: 'Antimonio', symbol: 'Sb', val: '-3, +3, +5' },
+  { cat: 'nometal', name: 'Boro', symbol: 'B', val: '-3, +3' },
+
+  // Carbonoides (-4 | +2, +4)
+  { cat: 'nometal', name: 'Carbono', symbol: 'C', val: '-4, +2, +4' },
+  { cat: 'nometal', name: 'Silicio', symbol: 'Si', val: '-4, +4' },
+  { cat: 'nometal', name: 'Germanio', symbol: 'Ge', val: '-4, +4' }
 ];
 
 let salaActual = null;
@@ -120,7 +197,7 @@ function iniciarConcurso() {
   }
 }
 
-// EVENTOS SOCKET
+// SOCKET EVENTS
 socket.on('roomCreated', ({ roomId }) => {
   salaActual = roomId;
   document.getElementById('codigo-display').innerText = roomId;
@@ -131,7 +208,7 @@ socket.on('playerJoined', ({ players }) => {
   const lista = document.getElementById('lista-jugadores-host');
   if (lista) {
     lista.innerHTML = players.map(p => `
-      <div style="background:rgba(255,255,255,0.05); padding:10px 16px; border-radius:12px; font-weight:800; border:1px solid rgba(255,255,255,0.1)">
+      <div style="background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; font-weight:800; border:1px solid rgba(255,255,255,0.1); font-size:0.9rem;">
         👤 ${p.name}
       </div>
     `).join('');
@@ -169,7 +246,7 @@ socket.on('gameOver', ({ players }) => {
 
 socket.on('errorMsg', (msg) => alert(msg));
 
-// RENDERIZADO DEL TABLERO
+// RENDERIZADO TABLERO
 function renderBoard(deck) {
   const boardEl = document.getElementById('tablero');
   boardEl.innerHTML = '';
@@ -214,7 +291,6 @@ function handleCardClick(cardEl, cardData, idx) {
 
   cardEl.classList.add('flipped');
   
-  // ETIQUETAS CLARAS PARA QUE NO ESTÉ AL REVÉS
   let tagTexto = 'CARTA';
   let textoMostrado = cardData.content;
 
@@ -222,7 +298,7 @@ function handleCardClick(cardEl, cardData, idx) {
   if (cardData.type === 'name') tagTexto = 'NOMBRE';
   if (cardData.type === 'valence') {
     tagTexto = 'VALENCIA';
-    textoMostrado = `VAL: ${cardData.content}`; // Muestra claramente la valencia
+    textoMostrado = `VAL: ${cardData.content}`;
   }
 
   cardEl.querySelector('.symbol').innerText = textoMostrado;
@@ -357,7 +433,7 @@ function activarTornado(index) {
   }, 400);
 }
 
-// RANKING LEADERBOARD PRO
+// RANKING RESPONSIVO Y PRO
 function actualizarTablaRanking(players) {
   const container = document.getElementById('tabla-ranking');
   if (!container) return;
