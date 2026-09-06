@@ -1,22 +1,17 @@
 {
   "name": "quimica-pro",
   "version": "1.0.0",
-  "description": "Juego multiplayer de valencias químicas con Node.js y Socket.io",
+  "description": "Multiplayer Chemistry Memory Quiz Engine",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "npx nodemon server.js"
   },
-  "keywords": [
-    "química",
-    "socket.io",
-    "express",
-    "quiz",
-    "multiplayer"
-  ],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.19.2",
     "socket.io": "^4.7.5"
   }
