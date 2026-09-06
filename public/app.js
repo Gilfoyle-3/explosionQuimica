@@ -7,12 +7,12 @@ let flippedCards = [];
 let isProcessing = false;
 
 const categoriesConfig = [
-  { id: "mono", label: "🟢 Monovalentes (Val. 1 / -1)" },
-  { id: "di", label: "🔵 Divalentes (Val. 2 / -2)" },
-  { id: "tri", label: "🟣 Trivalentes (Val. 3 / -3)" },
-  { id: "tetra", label: "🟡 Tetravalentes (Val. 4)" },
-  { id: "variable", label: "🟠 Metales Valencia Variable" },
-  { id: "polivalente", label: "🔴 No Metales Polivalentes" }
+  { id: "mono", label: "🟢 Monovalentes (+1)" },
+  { id: "di", label: "🔵 Divalentes (+2)" },
+  { id: "tri", label: "🟣 Trivalentes (+3)" },
+  { id: "variable", label: "🟠 Valencia Variable (Mono/Di/Tri)" },
+  { id: "tetra", label: "🟡 Di-Tetravalentes (+2, +4)" },
+  { id: "polivalente", label: "🔴 Polivalentes (Múltiples)" }
 ];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -20,28 +20,14 @@ window.addEventListener('DOMContentLoaded', () => {
   if (container) {
     container.innerHTML = categoriesConfig.map(cat => `
       <label class="element-checkbox-item">
-        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateMaxElementsLimit()"> ${cat.label}
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked> ${cat.label}
       </label>
     `).join('');
-    updateMaxElementsLimit();
   }
 });
 
-function updateMaxElementsLimit() {
-  const selectedCats = document.querySelectorAll('.cat-checkbox:checked').length;
-  const maxElementsInput = document.getElementById('create-limit');
-  if (maxElementsInput) {
-    // Estimación máxima según categorías (aprox 5-6 por categoría)
-    maxElementsInput.max = selectedCats * 5 || 5;
-    if (parseInt(maxElementsInput.value) > parseInt(maxElementsInput.max)) {
-      maxElementsInput.value = maxElementsInput.max;
-    }
-  }
-}
-
 function toggleAllCategories(status) {
   document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = status);
-  updateMaxElementsLimit();
 }
 
 function switchView(viewId) {
@@ -52,7 +38,6 @@ function switchView(viewId) {
 function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
   const duration = document.getElementById('create-duration').value;
-  const elementLimit = document.getElementById('create-limit').value || 10;
   
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
@@ -63,7 +48,7 @@ function handleCreateRoom() {
     return alert("⚠️ Debes seleccionar al menos una categoría de valencia.");
   }
 
-  socket.emit('create_room', { title, duration, selectedCategories, elementLimit });
+  socket.emit('create_room', { title, duration, selectedCategories });
 }
 
 socket.on('room_created', ({ roomCode }) => {
@@ -261,7 +246,6 @@ socket.on('timer_tick', (seconds) => {
   if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
 });
 
-// Al finalizar la partida, muestra el botón de volver al inicio
 socket.on('game_over', () => {
   const gameLayout = document.querySelector('.game-layout');
   if (gameLayout) {
