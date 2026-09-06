@@ -11,7 +11,8 @@ app.use(express.static('public'));
 // ==========================================
 // DB BASE DE ELEMENTOS POR FAMILIAS
 // ==========================================
-const FAMILIAS_METALES = {
+const FAMILIAS_QUIMICA = {
+  // METALES DE VALENCIA FIJA
   monovalentes: [
     { nombre: 'Litio', simbolo: 'Li', valencia: '+1' },
     { nombre: 'Sodio', simbolo: 'Na', valencia: '+1' },
@@ -29,15 +30,44 @@ const FAMILIAS_METALES = {
     { nombre: 'Escandio', simbolo: 'Sc', valencia: '+3' },
     { nombre: 'Galio', simbolo: 'Ga', valencia: '+3' }
   ],
+
+  // METALES DE VALENCIA VARIABLE
   variable_1_2: [
     { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
     { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' }
+  ],
+  variable_1_3: [
+    { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' }
   ],
   variable_2_3: [
     { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3' },
     { nombre: 'Cobalto', simbolo: 'Co', valencia: '+2, +3' },
     { nombre: 'Níquel', simbolo: 'Ni', valencia: '+2, +3' }
   ],
+  variable_2_4: [
+    { nombre: 'Plomo', simbolo: 'Pb', valencia: '+2, +4' },
+    { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4' },
+    { nombre: 'Platino', simbolo: 'Pt', valencia: '+2, +4' }
+  ],
+
+  // NO METALES
+  halogenos: [
+    { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1, +1, +3, +5, +7' },
+    { nombre: 'Bromo', simbolo: 'Br', valencia: '-1, +1, +3, +5, +7' },
+    { nombre: 'Yodo', simbolo: 'I', valencia: '-1, +1, +3, +5, +7' }
+  ],
+  anfigenos: [
+    { nombre: 'Azufre', simbolo: 'S', valencia: '-2, +2, +4, +6' },
+    { nombre: 'Selenio', simbolo: 'Se', valencia: '-2, +2, +4, +6' },
+    { nombre: 'Teluro', simbolo: 'Te', valencia: '-2, +2, +4, +6' }
+  ],
+  nitrogenoides: [
+    { nombre: 'Nitrógeno', simbolo: 'N', valencia: '-3, +1, +3, +5' },
+    { nombre: 'Fósforo', simbolo: 'P', valencia: '-3, +1, +3, +5' },
+    { nombre: 'Arsénico', simbolo: 'As', valencia: '-3, +3, +5' }
+  ],
+
+  // ANFÓTEROS Y POLIVALENTES
   polivalentes: [
     { nombre: 'Cromo', simbolo: 'Cr', valencia: '+2, +3, +6' },
     { nombre: 'Manganeso', simbolo: 'Mn', valencia: '+2, +3, +4, +6, +7' },
