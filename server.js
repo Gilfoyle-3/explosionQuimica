@@ -4,12 +4,17 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(express.static('public'));
 
 // ==========================================
-// DB BASE DE ELEMENTOS POR FAMILIAS
+// BASE DE DATOS COMPLETA DE ELEMENTOS
 // ==========================================
 const FAMILIAS_QUIMICA = {
   // METALES DE VALENCIA FIJA
@@ -78,7 +83,9 @@ const FAMILIAS_QUIMICA = {
 const salas = {};
 
 io.on('connection', (socket) => {
+  console.log(`⚡ Cliente conectado: ${socket.id}`);
 
+  // 1. CREAR SALA (HOST)
   socket.on('crear_sala', () => {
     const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -92,119 +99,184 @@ io.on('connection', (socket) => {
       configuracion: {
         nombreConcurso: 'Torneo Química Pro',
         duracionSegundos: 120,
-        familiasSeleccionadas: ['monovalentes', 'divalentes', 'trivalentes', 'polivalentes']
+        familiasSeleccionadas: Object.keys(FAMILIAS_QUIMICA)
       }
     };
 
     socket.join(codigoSala);
-    socket.emit('sala_creada', { codigoSala, familias: Object.keys(FAMILIAS_METALES) });
+    socket.emit('sala_creada', { 
+      codigoSala, 
+      familiasDisponibles: Object.keys(FAMILIAS_QUIMICA) 
+    });
   });
 
+  // 2. UNIRSE A SALA (JUGADOR)
   socket.on('unirse_sala', ({ codigoSala, nickname }) => {
     const sala = salas[codigoSala];
     if (!sala) return socket.emit('error_login', 'La sala no existe.');
-    if (sala.estado !== 'esperando') return socket.emit('error_login', 'El juego ya inició.');
+    if (sala.estado !== 'esperando') return socket.emit('error_login', 'El concurso ya está en marcha.');
 
-    const existe = sala.jugadores.some(j => j.nickname.toLowerCase() === nickname.trim().toLowerCase());
-    if (existe) return socket.emit('error_login', 'Ese apodo ya existe.');
+    const nickLimpio = (nickname || '').trim();
+    if (!nickLimpio) return socket.emit('error_login', 'Debes ingresar un apodo válido.');
 
-    sala.jugadores.push({ id: socket.id, nickname: nickname.trim() });
-    sala.puntuaciones[socket.id] = { nickname: nickname.trim(), puntos: 0 };
+    const existe = sala.jugadores.some(j => j.nickname.toLowerCase() === nickLimpio.toLowerCase());
+    if (existe) return socket.emit('error_login', 'Ese apodo ya está en uso en esta sala.');
+
+    sala.jugadores.push({ id: socket.id, nickname: nickLimpio });
+    sala.puntuaciones[socket.id] = { nickname: nickLimpio, puntos: 0 };
     sala.cartasVolteadasPorJugador[socket.id] = [];
 
     socket.join(codigoSala);
-    socket.emit('unido_exitosamente', { codigoSala });
+    socket.emit('unido_exitosamente', { codigoSala, nickname: nickLimpio });
     io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
   });
 
+  // 3. INICIAR CONCURSO (SOLO HOST)
   socket.on('iniciar_concurso', ({ codigoSala, nombreConcurso, duracionSegundos, familias }) => {
     const sala = salas[codigoSala];
-    if (!sala || sala.anfitrion !== socket.id) return;
-
-    sala.configuracion.nombreConcurso = nombreConcurso;
-    sala.configuracion.duracionSegundos = duracionSegundos;
-    sala.configuracion.familiasSeleccionadas = familias;
     
-    sala.tablero = generarTablero(familias);
+    if (!sala) return socket.emit('error_juego', 'La sala especificada no existe.');
+    if (sala.anfitrion !== socket.id) return socket.emit('error_juego', 'Solo el anfitrión puede iniciar el juego.');
+
+    const familiasValidas = Array.isArray(familias) && familias.length > 0 
+      ? familias 
+      : ['monovalentes', 'divalentes'];
+
+    sala.configuracion.nombreConcurso = nombreConcurso || 'Torneo Química Pro';
+    sala.configuracion.duracionSegundos = duracionSegundos || 120;
+    sala.configuracion.familiasSeleccionadas = familiasValidas;
+    
+    // Generar las cartas
+    sala.tablero = generarTablero(familiasValidas);
     sala.estado = 'jugando';
 
     io.to(codigoSala).emit('concurso_iniciado', {
       tablero: sala.tablero,
       puntuaciones: sala.puntuaciones,
-      nombreConcurso,
-      duracionSegundos
+      nombreConcurso: sala.configuracion.nombreConcurso,
+      duracionSegundos: sala.configuracion.duracionSegundos
     });
   });
 
+  // 4. LÓGICA DEL JUEGO: SELECCIONAR CARTA
   socket.on('seleccionar_carta', ({ codigoSala, cartaId }) => {
     const sala = salas[codigoSala];
     if (!sala || sala.estado !== 'jugando') return;
 
-    const misVolteadas = sala.cartasVolteadasPorJugador[socket.id] || [];
-    if (misVolteadas.length >= 3) return; // Máximo 3 cartas a la vez
+    if (!sala.cartasVolteadasPorJugador[socket.id]) {
+      sala.cartasVolteadasPorJugador[socket.id] = [];
+    }
+
+    const misVolteadas = sala.cartasVolteadasPorJugador[socket.id];
+    if (misVolteadas.length >= 3) return; // Límite de 3 cartas por turno
 
     const carta = sala.tablero.find(c => c.id === cartaId);
     if (!carta || carta.revelada || carta.emparejada) return;
 
+    // Voltear la carta elegida
     carta.revelada = true;
     misVolteadas.push(carta);
-    sala.cartasVolteadasPorJugador[socket.id] = misVolteadas;
 
     io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
 
-    // EVALUACIÓN AL TENER 3 CARTAS
+    // EVALUAR TRÍO CUANDO SE TIENEN 3 CARTAS
     if (misVolteadas.length === 3) {
       const [c1, c2, c3] = misVolteadas;
 
-      // Verificar Trío: Mismo elemento (grupoId) y 3 tipos diferentes
+      // Un trío perfecto requiere: Mismo elemento (grupoId) + 3 atributos distintos (nombre, símbolo, valencia)
       const mismoGrupo = (c1.grupoId === c2.grupoId) && (c2.grupoId === c3.grupoId);
-      const tiposUnicos = new Set([c1.tipo, c2.tipo, c3.tipo]).size === 3;
+      const tiposDiferentes = new Set([c1.tipo, c2.tipo, c3.tipo]).size === 3;
 
-      if (mismoGrupo && tiposUnicos) {
+      if (mismoGrupo && tiposDiferentes) {
         // TRÍO CORRECTO: +100 PUNTOS
         c1.emparejada = true;
         c2.emparejada = true;
         c3.emparejada = true;
 
-        sala.puntuaciones[socket.id].puntos += 100;
+        if (sala.puntuaciones[socket.id]) {
+          sala.puntuaciones[socket.id].puntos += 100;
+        }
+
         sala.cartasVolteadasPorJugador[socket.id] = [];
 
         io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
         io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
       } else {
-        // FALLO: VOLTEAR TRAS 1.5s
+        // ERROR: Voltear de nuevo las cartas tras 1.2 segundos
         setTimeout(() => {
           c1.revelada = false;
           c2.revelada = false;
           c3.revelada = false;
+          
           sala.cartasVolteadasPorJugador[socket.id] = [];
           io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
-        }, 1500);
+        }, 1200);
       }
     }
   });
+
+  // 5. CONTROL DE DESCONEXIONES
+  socket.on('disconnect', () => {
+    console.log(`❌ Cliente desconectado: ${socket.id}`);
+    
+    Object.keys(salas).forEach(codigoSala => {
+      const sala = salas[codigoSala];
+      
+      // Eliminar al jugador desconectado
+      sala.jugadores = sala.jugadores.filter(j => j.id !== socket.id);
+      delete sala.puntuaciones[socket.id];
+      delete sala.cartasVolteadasPorJugador[socket.id];
+
+      // Notificar a los que se quedan
+      io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
+      io.to(codigoSala).emit('actualizar_puntuaciones', { puntuaciones: sala.puntuaciones });
+
+      // Si la sala se queda vacía, la borramos de memoria
+      if (sala.jugadores.length === 0 && sala.anfitrion !== socket.id) {
+        delete salas[codigoSala];
+      }
+    });
+  });
 });
 
+// ==========================================
+// FUNCIÓN GENERADORA DEL TABLERO
+// ==========================================
 function generarTablero(familiasPermitidas) {
   let poolElementos = [];
+
   familiasPermitidas.forEach(fam => {
-    if (FAMILIAS_METALES[fam]) poolElementos.push(...FAMILIAS_METALES[fam]);
+    if (FAMILIAS_QUIMICA[fam]) {
+      poolElementos.push(...FAMILIAS_QUIMICA[fam]);
+    }
   });
 
-  if (poolElementos.length === 0) poolElementos = FAMILIAS_METALES.monovalentes;
+  // Respaldo de seguridad en caso de recibir familias vacías
+  if (poolElementos.length === 0) {
+    poolElementos = FAMILIAS_QUIMICA.monovalentes;
+  }
 
   let cartas = [];
   let cardId = 1;
 
   poolElementos.forEach(elem => {
     const grupoId = elem.nombre;
+    // Generamos las 3 cartas del trío
     cartas.push({ id: cardId++, tipo: 'nombre', contenido: elem.nombre, grupoId, revelada: false, emparejada: false });
     cartas.push({ id: cardId++, tipo: 'simbolo', contenido: elem.simbolo, grupoId, revelada: false, emparejada: false });
     cartas.push({ id: cardId++, tipo: 'valencia', contenido: elem.valencia, grupoId, revelada: false, emparejada: false });
   });
 
-  return cartas.sort(() => 0.5 - Math.random());
+  // Mezclador de cartas (Algoritmo Fisher-Yates)
+  for (let i = cartas.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cartas[i], cartas[j]] = [cartas[j], cartas[i]];
+  }
+
+  return cartas;
 }
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Servidor activo en el puerto ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`🚀 Servidor Química Pro corriendo en http://localhost:${PORT}`);
+});
