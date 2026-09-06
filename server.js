@@ -11,19 +11,79 @@ const io = new Server(server, {
 app.use(express.static('public'));
 
 // Base de Datos de Elementos Químicos
+// Base de Datos Completa de Metales
 const DB_ELEMENTOS = [
-  { nombre: 'Hidrógeno', simbolo: 'H', valencia: '+1', categoria: 'monovalentes' },
-  { nombre: 'Sodio', simbolo: 'Na', valencia: '+1', categoria: 'monovalentes' },
-  { nombre: 'Potasio', simbolo: 'K', valencia: '+1', categoria: 'monovalentes' },
-  { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2', categoria: 'divalentes' },
-  { nombre: 'Magnesio', simbolo: 'Mg', valencia: '+2', categoria: 'divalentes' },
-  { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3', categoria: 'trivalentes' },
-  { nombre: 'Hierro (II)', simbolo: 'Fe', valencia: '+2', categoria: 'polivalentes' },
-  { nombre: 'Hierro (III)', simbolo: 'Fe', valencia: '+3', categoria: 'polivalentes' },
-  { nombre: 'Cobre (I)', simbolo: 'Cu', valencia: '+1', categoria: 'polivalentes' },
-  { nombre: 'Cobre (II)', simbolo: 'Cu', valencia: '+2', categoria: 'polivalentes' },
-  { nombre: 'Oxígeno', simbolo: 'O', valencia: '-2', categoria: 'no_metales' },
-  { nombre: 'Cloro', simbolo: 'Cl', valencia: '-1', categoria: 'no_metales' }
+  // Monovalentes (+1)
+  { nombre: 'Litio', simbolo: 'Li', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Sodio', simbolo: 'Na', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Potasio', simbolo: 'K', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Rubidio', simbolo: 'Rb', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Plata', simbolo: 'Ag', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Cesio', simbolo: 'Cs', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Francio', simbolo: 'Fr', valencia: '+1', categoria: 'Monovalentes' },
+  { nombre: 'Amonio', simbolo: 'NH₄', valencia: '+1', categoria: 'Monovalentes' },
+
+  // Divalentes (+2)
+  { nombre: 'Magnesio', simbolo: 'Mg', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Calcio', simbolo: 'Ca', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Zinc', simbolo: 'Zn', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Bario', simbolo: 'Ba', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Berilio', simbolo: 'Be', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Cadmio', simbolo: 'Cd', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Estroncio', simbolo: 'Sr', valencia: '+2', categoria: 'Divalentes' },
+  { nombre: 'Radio', simbolo: 'Ra', valencia: '+2', categoria: 'Divalentes' },
+
+  // Trivalentes (+3)
+  { nombre: 'Aluminio', simbolo: 'Al', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Escandio', simbolo: 'Sc', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Galio', simbolo: 'Ga', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Ytrio', simbolo: 'Y', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Indio', simbolo: 'In', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Lantano', simbolo: 'La', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Actinio', simbolo: 'Ac', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Cromo', simbolo: 'Cr', valencia: '+3', categoria: 'Trivalentes' },
+  { nombre: 'Lutecio', simbolo: 'Lu', valencia: '+3', categoria: 'Trivalentes' },
+
+  // Mono-divalentes (+1, +2)
+  { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2', categoria: 'Mono-divalentes' },
+  { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2', categoria: 'Mono-divalentes' },
+
+  // Mono-trivalentes (+1, +3)
+  { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3', categoria: 'Mono-trivalentes' },
+  { nombre: 'Talio', simbolo: 'Tl', valencia: '+1, +3', categoria: 'Mono-trivalentes' },
+
+  // Di-trivalentes (+2, +3)
+  { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Cobalto', simbolo: 'Co', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Níquel', simbolo: 'Ni', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Samario', simbolo: 'Sm', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Europio', simbolo: 'Eu', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Yterbio', simbolo: 'Yb', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+  { nombre: 'Tulio', simbolo: 'Tm', valencia: '+2, +3', categoria: 'Di-trivalentes' },
+
+  // Di-tetravalentes (+2, +4)
+  { nombre: 'Plomo', simbolo: 'Pb', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+  { nombre: 'Germanio', simbolo: 'Ge', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+  { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+  { nombre: 'Platino', simbolo: 'Pt', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+  { nombre: 'Polonio', simbolo: 'Po', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+  { nombre: 'Paladio', simbolo: 'Pd', valencia: '+2, +4', categoria: 'Di-tetravalentes' },
+
+  // Polivalentes
+  { nombre: 'Cromo (Anfótero)', simbolo: 'Cr', valencia: '+2, +3, +6', categoria: 'Polivalentes' },
+  { nombre: 'Manganeso', simbolo: 'Mn', valencia: '+2, +3, +4, +6, +7', categoria: 'Polivalentes' },
+  { nombre: 'Bismuto', simbolo: 'Bi', valencia: '+3, +5', categoria: 'Polivalentes' },
+  { nombre: 'Titanio', simbolo: 'Ti', valencia: '+2, +3, +4', categoria: 'Polivalentes' },
+  { nombre: 'Vanadio', simbolo: 'V', valencia: '+2, +3, +4, +5', categoria: 'Polivalentes' },
+  { nombre: 'Molibdeno', simbolo: 'Mo', valencia: '+2, +3, +4, +5, +6', categoria: 'Polivalentes' },
+  { nombre: 'Wolframio', simbolo: 'W', valencia: '+2, +3, +4, +5, +6', categoria: 'Polivalentes' },
+  { nombre: 'Renio', simbolo: 'Re', valencia: '+1, +2, +3, +4, +6, +7', categoria: 'Polivalentes' },
+  { nombre: 'Osmio', simbolo: 'Os', valencia: '+2, +3, +4, +6, +8', categoria: 'Polivalentes' },
+  { nombre: 'Uranio', simbolo: 'U', valencia: '+3, +4, +5, +6', categoria: 'Polivalentes' },
+  { nombre: 'Americio', simbolo: 'Am', valencia: '+3, +4, +5, +6', categoria: 'Polivalentes' },
+  { nombre: 'Rutenio', simbolo: 'Ru', valencia: '+2, +3, +4', categoria: 'Polivalentes' },
+  { nombre: 'Neptunio', simbolo: 'Np', valencia: '+3, +4, +5, +6', categoria: 'Polivalentes' },
+  { nombre: 'Iridio', simbolo: 'Ir', valencia: '+2, +3, +4, +6', categoria: 'Polivalentes' }
 ];
 
 // Estructura de Salas activas
