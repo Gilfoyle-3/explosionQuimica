@@ -2,139 +2,141 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChemTrios Live - Concurso de Química</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ChemTrios Live - Valencias Químicas</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <div class="app-container">
     
-    <!-- PANTALLA 1: MENU PRINCIPAL -->
+    <!-- MENÚ PRINCIPAL -->
     <div id="view-main-menu" class="view active">
-      <div class="hero-header">
+      <div class="hero">
         <h1>🧪 ChemTrios <span>Live</span></h1>
-        <p>Desafío Multijugador de Valencias en Tiempo Real</p>
+        <p>Encuentra los tríos químicos y activa poderes en tiempo real</p>
       </div>
 
-      <div class="menu-grid">
-        <div class="card-option glow-gold" onclick="switchView('view-config-room')">
-          <div class="icon">👑</div>
-          <h2>Crear Concurso</h2>
-          <p>Configura el tiempo, familias y genera el código para tus estudiantes o amigos.</p>
+      <div class="menu-cards">
+        <div class="card-btn gold" onclick="switchView('view-config-room')">
+          <span class="badge">Creador</span>
+          <h2>👑 Crear Concurso</h2>
+          <p>Configura familias, tiempos y proyecta la pantalla principal.</p>
         </div>
 
-        <div class="card-option glow-blue" onclick="switchView('view-join-room')">
-          <div class="icon">🎮</div>
-          <h2>Unirse a Concurso</h2>
-          <p>Ingresa el código de 6 dígitos para competir en vivo.</p>
+        <div class="card-btn blue" onclick="switchView('view-join-room')">
+          <span class="badge">Estudiante</span>
+          <h2>🎮 Unirse a Concurso</h2>
+          <p>Ingresa con el código de 6 dígitos desde tu dispositivo.</p>
         </div>
       </div>
     </div>
 
-    <!-- PANTALLA 2: CONFIGURACIÓN DEL CONCURSO (SOLO CREADOR) -->
+    <!-- CONFIGURACIÓN DE SALA -->
     <div id="view-config-room" class="view">
-      <button class="btn-back" onclick="switchView('view-main-menu')">← Volver al Menú</button>
+      <button class="btn-back" onclick="switchView('view-main-menu')">← Volver</button>
       <h2>⚙️ Configuración del Concurso</h2>
       
-      <div class="form-container">
+      <div class="form-group">
         <label>Nombre del Concurso:</label>
-        <input type="text" id="create-title" placeholder="Ej: Evaluación 3º Sec - Química">
+        <input type="text" id="create-title" placeholder="Ej: Evaluación Química 3º A">
 
-        <label>Familia de la Tabla de Valencias:</label>
-        <select id="create-category">
-          <option value="todos">✨ TODAS LAS FAMILIAS (Metales y No Metales)</option>
-          <option value="metales_fija">🔵 Metales de Valencia Fija (+1, +2, +3)</option>
-          <option value="metales_variable">🟣 Metales de Valencia Variable (Fe, Cu, Au, etc.)</option>
-          <option value="halogenos">🔴 No Metales: Halógenos (F, Cl, Br, I)</option>
-          <option value="anfigenos">🟡 No Metales: Anfígenos (O, S, Se, Te)</option>
-          <option value="nitrogenoides">🟢 No Metales: Nitrogenoides (N, P, As)</option>
-          <option value="carbonoides">🟠 No Metales: Carbonoides (C, Si)</option>
-        </select>
+        <label>Selecciona las Familias Químicas:</label>
+        <div class="checkbox-group">
+          <label class="checkbox-label"><input type="checkbox" id="cat-todos" onchange="toggleSelectAll(this)" checked> ✨ Todas las Familias</label>
+          <hr class="divider">
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="metales_fija" checked> 🔵 Metales Valencia Fija (+1, +2, +3)</label>
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="metales_variable" checked> 🟣 Metales Valencia Variable (Fe, Cu, Au...)</label>
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="halogenos" checked> 🔴 Halógenos (F, Cl, Br, I)</label>
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="anfigenos" checked> 🟡 Anfígenos (O, S, Se, Te)</label>
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="nitrogenoides" checked> 🟢 Nitrogenoides (N, P, As)</label>
+          <label class="checkbox-label"><input type="checkbox" class="cat-item" value="carbonoides" checked> 🟠 Carbonoides (C, Si)</label>
+        </div>
 
-        <label>Duración (en minutos):</label>
-        <input type="number" id="create-duration" value="5" min="1" max="30">
+        <div class="form-row">
+          <div>
+            <label>Duración (Min):</label>
+            <input type="number" id="create-duration" value="5" min="1" max="30">
+          </div>
+          <div>
+            <label>Nº Elementos (Tríos):</label>
+            <input type="number" id="create-elements" value="8" min="3" max="20">
+          </div>
+        </div>
 
-        <label>Cantidad de Elementos (Tríos):</label>
-        <input type="number" id="create-elements" value="8" min="3" max="30">
-
-        <button class="btn btn-gold btn-large" onclick="handleCreateRoom()">🚀 Generar Sala y Código</button>
+        <button class="btn btn-gold btn-large" onclick="handleCreateRoom()">🚀 Generar Sala</button>
       </div>
     </div>
 
-    <!-- PANTALLA 3: UNIRSE A SALA (SOLO JUGADOR) -->
+    <!-- UNIRSE A SALA -->
     <div id="view-join-room" class="view">
-      <button class="btn-back" onclick="switchView('view-main-menu')">← Volver al Menú</button>
-      <h2>🎮 Ingresar a un Concurso</h2>
+      <button class="btn-back" onclick="switchView('view-main-menu')">← Volver</button>
+      <h2>🎮 Unirse como Jugador</h2>
 
-      <div class="form-container">
-        <label>Tu Nombre / Apodo:</label>
-        <input type="text" id="join-name" placeholder="Ej: Maria_Quimica">
+      <div class="form-group">
+        <label>Tu Nickname:</label>
+        <input type="text" id="join-name" placeholder="Ej: Carlos_Quimico">
 
-        <label>Código de Sala (6 dígitos):</label>
+        <label>Código de Sala:</label>
         <input type="text" id="join-code" placeholder="123456" maxlength="6">
 
-        <button class="btn btn-blue btn-large" onclick="handleJoinRoom()">Entrar a la Sala</button>
+        <button class="btn btn-blue btn-large" onclick="handleJoinRoom()">Ingresar a la Sala</button>
       </div>
     </div>
 
-    <!-- PANTALLA 4: LOBBY CREADOR (ESPERANDO JUGADORES) -->
+    <!-- LOBBY CREADOR -->
     <div id="view-host-lobby" class="view">
       <h2>Código de Acceso:</h2>
-      <div class="room-code" id="host-code-display">------</div>
-      <p class="subtitle">Muestra este código a tus participantes</p>
+      <div class="room-code-badge" id="host-code-display">------</div>
 
-      <h3>Jugadores Conectados (<span id="player-count">0</span>):</h3>
-      <ul id="host-player-list" class="user-list"></ul>
+      <div class="leaderboard-box">
+        <div class="lb-header">
+          <h3>Participantes Conectados</h3>
+          <span id="player-count" class="count-badge">0</span>
+        </div>
+        <ul id="host-player-list" class="leaderboard-list"></ul>
+      </div>
 
       <button class="btn btn-green btn-large" onclick="handleStartGame()">🚀 Iniciar Concurso Ahora</button>
     </div>
 
-    <!-- PANTALLA 5: SALA DE ESPERA JUGADOR -->
+    <!-- SALA DE ESPERA JUGADOR -->
     <div id="view-player-waiting" class="view">
-      <div class="waiting-box">
-        <h2>⏳ Conectado con éxito</h2>
-        <p>Esperando a que el creador inicie la partida...</p>
-      </div>
-
-      <div class="rules-card">
-        <h3>📜 Reglas Rápidas:</h3>
-        <ul>
-          <li>Debes encontrar **Tríos**: <code>Elemento</code> + <code>Símbolo</code> + <code>Valencia</code>.</li>
-          <li><strong>🌪️ Tornado:</strong> Revuelve todas las cartas tapadas del tablero.</li>
-          <li><strong>💣 Bomba:</strong> Muestra un cuadrado de 3x3 alrededor de donde hagas clic durante 2 segundos.</li>
-        </ul>
+      <div class="waiting-card">
+        <div class="spinner"></div>
+        <h2>¡Estás Conectado!</h2>
+        <p>El profesor iniciará la partida en breve...</p>
       </div>
     </div>
 
-    <!-- PANTALLA 6: PANTALLA ESPECTADOR (CREADOR) -->
+    <!-- PANTALLA ESPECTADOR (CREADOR EN VIVO) -->
     <div id="view-host-live" class="view">
-      <div class="top-bar">
-        <h2 id="live-title">Concurso en Vivo</h2>
-        <div class="timer-badge">⌛ <span id="host-timer">00:00</span></div>
+      <div class="live-header">
+        <h2>🏆 Ranking en Vivo</h2>
+        <div class="timer-badge">⏱️ <span id="host-timer">00:00</span></div>
       </div>
       
-      <h3>🏆 Tabla de Clasificación</h3>
-      <ul id="host-live-leaderboard" class="ranking-list"></ul>
+      <div class="leaderboard-box full-size">
+        <ul id="host-live-leaderboard" class="leaderboard-list"></ul>
+      </div>
     </div>
 
-    <!-- PANTALLA 7: TABLERO DE JUEGO (JUGADOR) -->
+    <!-- TABLERO DE JUEGO (JUGADOR) -->
     <div id="view-player-game" class="view">
       <div class="game-header">
-        <div>⏱️ Tiempo: <span id="player-timer">00:00</span></div>
-        <div>⭐ Puntos: <span id="player-score">0</span></div>
+        <div>⏱️ <span id="player-timer">00:00</span></div>
+        <div>⭐ <span id="player-score">0</span> pts</div>
       </div>
 
-      <div class="board-layout">
+      <div class="game-layout">
         <div class="cards-grid" id="board-grid"></div>
         
-        <div class="controls-panel">
-          <h3>Poderes</h3>
-          <button class="btn btn-purple" id="btn-tornado" onclick="triggerTornado()">🌪️ Tornado</button>
-          <button class="btn btn-red" id="btn-bomba" onclick="armBombMode()">💣 Bomba 3x3</button>
-
-          <h3>Posiciones</h3>
-          <ul id="player-live-leaderboard" class="ranking-list mini"></ul>
+        <div class="leaderboard-box sidebar-lb">
+          <div class="lb-header">
+            <h3>Ranking</h3>
+            <span id="game-player-count" class="count-badge">0</span>
+          </div>
+          <ul id="player-live-leaderboard" class="leaderboard-list"></ul>
         </div>
       </div>
     </div>
