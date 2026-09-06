@@ -93,6 +93,7 @@ function unirseConcurso() {
     return;
   }
   esHost = false;
+  salaActual = codigo; // Aseguramos guardar la referencia de la sala en el jugador
   socket.emit('joinRoom', { roomId: codigo, playerName: alias });
 }
 
@@ -189,9 +190,16 @@ function checkMatch() {
     setTimeout(() => {
       c1.element.classList.add('matched');
       c2.element.classList.add('matched');
+      
+      // Sumar puntos y enviar al servidor
       miPuntaje += 100;
       document.getElementById('mis-puntos').innerText = miPuntaje;
-      socket.emit('updateScore', { roomId: salaActual, points: miPuntaje });
+      
+      // NOTIFICAR AL SERVIDOR PARA ACTUALIZAR RANKING EN TIEMPO REAL
+      if (salaActual) {
+        socket.emit('updateScore', { roomId: salaActual, points: miPuntaje });
+      }
+
       flippedCards = [];
     }, 400);
   } else {
