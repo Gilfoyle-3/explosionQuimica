@@ -6,31 +6,50 @@ let myScore = 0;
 let flippedCards = [];
 let isProcessing = false;
 
+// Categorías disponibles para selección múltiple
+const categoriesConfig = [
+  { id: "mono", label: "🟢 Monovalentes (Val. 1 / -1)" },
+  { id: "di", label: "🔵 Divalentes (Val. 2 / -2)" },
+  { id: "tri", label: "🟣 Trivalentes (Val. 3 / -3)" },
+  { id: "tetra", label: "🟡 Tetravalentes (Val. 4)" },
+  { id: "variable", label: "🟠 Metales Valencia Variable" },
+  { id: "polivalente", label: "🔴 No Metales Polivalentes (Halógenos/Azufre)" }
+];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('elements-selector-container');
+  if (container) {
+    container.innerHTML = categoriesConfig.map(cat => `
+      <label class="element-checkbox-item">
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onchange="updateSelectedCount()"> ${cat.label}
+      </label>
+    `).join('');
+  }
+});
+
+function toggleAllCategories(status) {
+  document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = status);
+}
+
 function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
 }
 
-function toggleSelectAll(master) {
-  document.querySelectorAll('.cat-item').forEach(cb => cb.checked = master.checked);
-}
-
-// CREADOR: Crear sala
 function handleCreateRoom() {
-  const title = document.getElementById('create-title').value.trim() || "Concurso Química";
+  const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
   const duration = document.getElementById('create-duration').value;
-  const elementCount = document.getElementById('create-elements').value;
+  
+  const selectedCategories = [];
+  document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
+    selectedCategories.push(cb.value);
+  });
 
-  const categories = [];
-  if (document.getElementById('cat-todos').checked) {
-    categories.push('todos');
-  } else {
-    document.querySelectorAll('.cat-item:checked').forEach(cb => categories.push(cb.value));
+  if (selectedCategories.length === 0) {
+    return alert("⚠️ Debes seleccionar al menos una categoría de valencia.");
   }
 
-  if (categories.length === 0) return alert("Selecciona al menos una familia.");
-
-  socket.emit('create_room', { title, duration, elementCount, categories });
+  socket.emit('create_room', { title, duration, selectedCategories });
 }
 
 socket.on('room_created', ({ roomCode }) => {
@@ -39,12 +58,11 @@ socket.on('room_created', ({ roomCode }) => {
   switchView('view-host-lobby');
 });
 
-// JUGADOR: Unirse
 function handleJoinRoom() {
   const name = document.getElementById('join-name').value.trim();
   const roomCode = document.getElementById('join-code').value.trim();
 
-  if (!name || !roomCode) return alert("Ingresa tu nombre y el código.");
+  if (!name || !roomCode) return alert("⚠️ Ingresa tu nickname y código.");
 
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
@@ -57,12 +75,11 @@ socket.on('joined_waiting_room', ({ id }) => {
 
 socket.on('error_message', (msg) => alert(msg));
 
-// FUNCION CORE PARA DIBUJAR EL RANKING
 function renderLeaderboard(players, targetListId, targetCountId) {
   const list = document.getElementById(targetListId);
   const count = document.getElementById(targetCountId);
 
-  if (count) count.innerText = `${players.length} Jugadores`;
+  if (count) count.innerText = players.length;
   if (!list) return;
 
   list.innerHTML = players.map((p, index) => {
@@ -80,9 +97,9 @@ function renderLeaderboard(players, targetListId, targetCountId) {
       <li class="player-row ${rankClass} ${isMe}">
         <div class="player-info">
           <span class="player-rank">${medal}</span>
-          <span class="player-name">${p.name} ${p.id === mySocketId ? '(Tú)' : ''}</span>
+          <span class="player-name">${p.name} ${p.id === mySocketId ? '(TÚ)' : ''}</span>
         </div>
-        <span class="player-score">${p.score} pts</span>
+        <span class="player-score">${p.score} PTS</span>
       </li>
     `;
   }).join('');
@@ -93,7 +110,7 @@ socket.on('update_player_list', (players) => {
 });
 
 socket.on('update_leaderboard', (players) => {
-  renderLeaderboard(players, 'host-live-leaderboard', 'host-count');
+  renderLeaderboard(players, 'host-live-leaderboard', 'player-count');
   renderLeaderboard(players, 'player-live-leaderboard', 'game-player-count');
 });
 
@@ -110,7 +127,6 @@ socket.on('game_started', ({ deck }) => {
   }
 });
 
-// TABLERO Y PODERES
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
   grid.innerHTML = '';
@@ -124,7 +140,7 @@ function renderBoard(deck) {
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
 
-    el.innerText = '?';
+    el.innerText = '[ ? ]';
     el.onclick = () => handleCardClick(el, index);
     grid.appendChild(el);
   });
@@ -133,17 +149,16 @@ function renderBoard(deck) {
 function handleCardClick(cardEl, index) {
   if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
-  // CARTA ESPECIAL DE PODER
   if (cardEl.dataset.isPower === "true") {
     cardEl.classList.add('flipped', 'power-card');
     cardEl.innerText = cardEl.dataset.text;
 
     setTimeout(() => {
       if (cardEl.dataset.powerType === 'tornado') {
-        alert("🌪️ ¡TORNADO! Se reordenan todas las cartas no resueltas.");
+        alert("🌪️ ¡TORNADO ACTIVADO! Reordenando el tablero...");
         socket.emit('trigger_global_tornado', currentRoomCode);
       } else if (cardEl.dataset.powerType === 'bomba') {
-        alert("💣 ¡BOMBA! Revelando área 3x3 por 2 segundos.");
+        alert("💣 ¡BOMBA ACTIVADA! Revelando sector 3x3.");
         executeBombEffect(index);
       }
       cardEl.classList.add('matched');
@@ -152,7 +167,6 @@ function handleCardClick(cardEl, index) {
     return;
   }
 
-  // TRIOS REGULARES
   cardEl.classList.add('flipped');
   cardEl.innerText = cardEl.dataset.text;
   flippedCards.push(cardEl);
@@ -180,7 +194,7 @@ function checkTrio() {
     setTimeout(() => {
       flippedCards.forEach(c => {
         c.classList.remove('flipped');
-        c.innerText = '?';
+        c.innerText = '[ ? ]';
       });
       resetTurn();
     }, 900);
@@ -195,7 +209,6 @@ function resetTurn() {
 socket.on('apply_tornado', () => {
   const grid = document.getElementById('board-grid');
   if (!grid) return;
-
   const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
   cards.sort(() => 0.5 - Math.random());
   cards.forEach(c => grid.appendChild(c));
@@ -204,7 +217,6 @@ socket.on('apply_tornado', () => {
 function executeBombEffect(centerIndex) {
   const allCards = Array.from(document.querySelectorAll('.card'));
   const columns = window.innerWidth <= 768 ? 3 : 4;
-
   const row = Math.floor(centerIndex / columns);
   const col = centerIndex % columns;
 
@@ -216,11 +228,8 @@ function executeBombEffect(centerIndex) {
       if (!c.classList.contains('matched')) {
         c.classList.add('bomb-highlight');
         c.innerText = c.dataset.text;
-        
         setTimeout(() => {
-          if (!c.classList.contains('flipped')) {
-            c.innerText = '?';
-          }
+          if (!c.classList.contains('flipped')) c.innerText = '[ ? ]';
           c.classList.remove('bomb-highlight');
         }, 2000);
       }
@@ -237,6 +246,6 @@ socket.on('timer_tick', (seconds) => {
   if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
 });
 
-socket.on('game_over', (finalPlayers) => {
-  alert("⌛ ¡El tiempo del concurso ha terminado!");
+socket.on('game_over', () => {
+  alert("⌛ ¡CONEXIÓN CERRADA: El tiempo de la red ha expirado!");
 });
