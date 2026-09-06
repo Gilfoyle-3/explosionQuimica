@@ -7,40 +7,23 @@ const ELEMENT_DATABASE = [
   { name: 'Litio', symbol: 'Li', val: '+1' },
   { name: 'Sodio', symbol: 'Na', val: '+1' },
   { name: 'Potasio', symbol: 'K', val: '+1' },
-  { name: 'Rubidio', symbol: 'Rb', val: '+1' },
-  { name: 'Cesio', symbol: 'Cs', val: '+1' },
-  { name: 'Francio', symbol: 'Fr', val: '+1' },
   { name: 'Plata', symbol: 'Ag', val: '+1' },
-  { name: 'Amonio', symbol: 'NH4', val: '+1' },
   { name: 'Berilio', symbol: 'Be', val: '+2' },
   { name: 'Magnesio', symbol: 'Mg', val: '+2' },
   { name: 'Calcio', symbol: 'Ca', val: '+2' },
-  { name: 'Estroncio', symbol: 'Sr', val: '+2' },
-  { name: 'Bario', symbol: 'Ba', val: '+2' },
-  { name: 'Radio', symbol: 'Ra', val: '+2' },
   { name: 'Zinc', symbol: 'Zn', val: '+2' },
-  { name: 'Cadmio', symbol: 'Cd', val: '+2' },
   { name: 'Aluminio', symbol: 'Al', val: '+3' },
   { name: 'Bismuto', symbol: 'Bi', val: '+3' },
-  { name: 'Galio', symbol: 'Ga', val: '+3' },
-  { name: 'Indio', symbol: 'In', val: '+3' },
-  { name: 'Germanio', symbol: 'Ge', val: '+4' },
-  { name: 'Osmio', symbol: 'Os', val: '+4' },
-  { name: 'Iridio', symbol: 'Ir', val: '+4' },
-  { name: 'Uranio', symbol: 'U', val: '+6' },
 
   // --- METALES DE VALENCIA VARIABLE ---
   { name: 'Cobre', symbol: 'Cu', val: '+1, +2' },
   { name: 'Mercurio', symbol: 'Hg', val: '+1, +2' },
   { name: 'Oro', symbol: 'Au', val: '+1, +3' },
-  { name: 'Talio', symbol: 'Tl', val: '+1, +3' },
   { name: 'Hierro', symbol: 'Fe', val: '+2, +3' },
   { name: 'Cobalto', symbol: 'Co', val: '+2, +3' },
   { name: 'Níquel', symbol: 'Ni', val: '+2, +3' },
   { name: 'Plomo', symbol: 'Pb', val: '+2, +4' },
   { name: 'Estaño', symbol: 'Sn', val: '+2, +4' },
-  { name: 'Platino', symbol: 'Pt', val: '+2, +4' },
-  { name: 'Vanadio', symbol: 'V', val: '+3, +5' },
 
   // --- NO METALES ---
   { name: 'Flúor', symbol: 'F', val: '-1' },
@@ -49,19 +32,9 @@ const ELEMENT_DATABASE = [
   { name: 'Yodo', symbol: 'I', val: '-1, +1, +3, +5, +7' },
   { name: 'Oxígeno', symbol: 'O', val: '-2' },
   { name: 'Azufre', symbol: 'S', val: '-2, +2, +4, +6' },
-  { name: 'Selenio', symbol: 'Se', val: '-2, +2, +4, +6' },
-  { name: 'Teluro', symbol: 'Te', val: '-2, +2, +4, +6' },
   { name: 'Nitrógeno', symbol: 'N', val: '-3, +1, +2, +3, +4, +5' },
   { name: 'Fósforo', symbol: 'P', val: '-3, +3, +5' },
-  { name: 'Arsénico', symbol: 'As', val: '-3, +3, +5' },
-  { name: 'Antimonio', symbol: 'Sb', val: '-3, +3, +5' },
-  { name: 'Boro', symbol: 'B', val: '-3, +3' },
-  { name: 'Carbono', symbol: 'C', val: '-4, +2, +4' },
-  { name: 'Silicio', symbol: 'Si', val: '-4, +4' },
-
-  // --- ANFÓTEROS ---
-  { name: 'Manganeso', symbol: 'Mn', val: '+2, +3 (Base) / +4, +6, +7 (Ácido)' },
-  { name: 'Cromo', symbol: 'Cr', val: '+2, +3 (Base) / +3, +6 (Ácido)' }
+  { name: 'Carbono', symbol: 'C', val: '-4, +2, +4' }
 ];
 
 let salaActual = null;
@@ -89,11 +62,11 @@ function unirseConcurso() {
   const codigo = document.getElementById('codigoIngreso').value;
 
   if (!alias || !codigo) {
-    alert('Ingresa tu alias y el código de la sala.');
+    alert('Por favor ingresa tu alias y el código de la sala.');
     return;
   }
   esHost = false;
-  salaActual = codigo; // Aseguramos guardar la referencia de la sala en el jugador
+  salaActual = codigo;
   socket.emit('joinRoom', { roomId: codigo, playerName: alias });
 }
 
@@ -103,7 +76,7 @@ function iniciarConcurso() {
   }
 }
 
-// RECEPCIÓN DE EVENTOS DE SOCKET
+// EVENTOS SOCKET
 socket.on('roomCreated', ({ roomId }) => {
   salaActual = roomId;
   document.getElementById('codigo-display').innerText = roomId;
@@ -113,7 +86,7 @@ socket.on('roomCreated', ({ roomId }) => {
 socket.on('playerJoined', ({ players }) => {
   const lista = document.getElementById('lista-jugadores-host');
   if (lista) {
-    lista.innerHTML = players.map(p => `<li>> ${p.name}</li>`).join('');
+    lista.innerHTML = players.map(p => `<li>👤 ${p.name}</li>`).join('');
   }
   actualizarTablaRanking(players);
 });
@@ -144,7 +117,7 @@ socket.on('rankingUpdate', ({ players }) => {
 
 socket.on('gameOver', ({ players }) => {
   actualizarTablaRanking(players);
-  document.getElementById('titulo-ranking').innerText = "¡CONCURSO FINALIZADO!";
+  document.getElementById('titulo-ranking').innerText = "¡FIN DEL JUEGO!";
   mostrarSeccion('pantalla-ranking');
 });
 
@@ -152,7 +125,7 @@ socket.on('errorMsg', (msg) => {
   alert(msg);
 });
 
-// LÓGICA DEL TABLERO DE JUEGO
+// TABLERO Y LÓGICA DE VALENCIAS FLEXIBLES
 function renderBoard(deck) {
   const boardEl = document.getElementById('tablero');
   boardEl.innerHTML = '';
@@ -163,7 +136,7 @@ function renderBoard(deck) {
     cardEl.dataset.index = idx;
     cardEl.innerHTML = `
       <div class="symbol">?</div>
-      <div class="type-tag">CYBER_CARD</div>
+      <div class="type-tag">TOCA PARA VER</div>
     `;
 
     cardEl.addEventListener('click', () => {
@@ -171,7 +144,8 @@ function renderBoard(deck) {
 
       cardEl.classList.add('flipped');
       cardEl.querySelector('.symbol').innerText = cardData.content;
-      cardEl.querySelector('.type-tag').innerText = cardData.sub;
+      cardEl.querySelector('.type-tag').innerText = cardData.type === 'element' ? cardData.sub : 'VALENCIA';
+      
       flippedCards.push({ element: cardEl, data: cardData });
 
       if (flippedCards.length === 2) {
@@ -186,32 +160,47 @@ function renderBoard(deck) {
 function checkMatch() {
   const [c1, c2] = flippedCards;
 
-  if (c1.data.matchId === c2.data.matchId) {
+  // Lógica flexible: Una carta debe ser Elemento y la otra Valencia
+  let isElement1 = c1.data.type === 'element';
+  let isElement2 = c2.data.type === 'element';
+
+  let matchSuccess = false;
+
+  // Deben ser uno de cada tipo (un Elemento y una Valencia)
+  if (isElement1 !== isElement2) {
+    const elementCard = isElement1 ? c1 : c2;
+    const valenceCard = isElement1 ? c2 : c1;
+
+    // Verificar si la valencia seleccionada coincide con alguna de las del elemento
+    if (elementCard.data.validValences.includes(valenceCard.data.content.trim())) {
+      matchSuccess = true;
+    }
+  }
+
+  if (matchSuccess) {
     setTimeout(() => {
       c1.element.classList.add('matched');
       c2.element.classList.add('matched');
-      
-      // Sumar puntos y enviar al servidor
+
       miPuntaje += 100;
       document.getElementById('mis-puntos').innerText = miPuntaje;
-      
-      // NOTIFICAR AL SERVIDOR PARA ACTUALIZAR RANKING EN TIEMPO REAL
+
       if (salaActual) {
         socket.emit('updateScore', { roomId: salaActual, points: miPuntaje });
       }
 
       flippedCards = [];
-    }, 400);
+    }, 300);
   } else {
     setTimeout(() => {
       c1.element.classList.remove('flipped');
       c2.element.classList.remove('flipped');
       c1.element.querySelector('.symbol').innerText = '?';
-      c1.element.querySelector('.type-tag').innerText = 'CYBER_CARD';
+      c1.element.querySelector('.type-tag').innerText = 'TOCA PARA VER';
       c2.element.querySelector('.symbol').innerText = '?';
-      c2.element.querySelector('.type-tag').innerText = 'CYBER_CARD';
+      c2.element.querySelector('.type-tag').innerText = 'TOCA PARA VER';
       flippedCards = [];
-    }, 800);
+    }, 700);
   }
 }
 
@@ -224,8 +213,8 @@ function actualizarTablaRanking(players) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>#${index + 1}</td>
-      <td>${p.name}</td>
-      <td><span class="neon-green">${p.points}</span></td>
+      <td><b>${p.name}</b></td>
+      <td><span class="neon-green">${p.points} pts</span></td>
     `;
     tbody.appendChild(tr);
   });
