@@ -1,126 +1,94 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 const rooms = {};
 
-// Genera la baraja con Tríos (Símbolo, Nombre, Valencia) + Poderes (Bomba, Tornado)
-function generateDeck(elements, categoriasElegidas) {
-  let filteredElements = elements;
+function generarCodigo() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-  if (categoriasElegidas && categoriasElegidas.length > 0) {
-    filteredElements = elements.filter(el => categoriasElegidas.includes(el.cat));
-  }
+function generarMazo(elementos) {
+  let deck = [];
+  const seleccionados = [...elementos].sort(() => Math.random() - 0.5).slice(0, 5);
 
-  if (filteredElements.length < 3) {
-    filteredElements = elements;
-  }
-
-  let cards = [];
-  filteredElements.forEach((el) => {
-    // 1. Carta Símbolo
-    cards.push({
-      idElem: el.symbol,
-      type: 'symbol',
-      content: el.symbol,
-      sub: 'SÍMBOLO',
-      valences: el.val
-    });
-
-    // 2. Carta Nombre
-    cards.push({
-      idElem: el.symbol,
-      type: 'name',
-      content: el.name,
-      sub: 'NOMBRE',
-      valences: el.val
-    });
-
-    // 3. Carta Valencia
-    const primeraVal = el.val.split(',')[0].trim();
-    cards.push({
-      idElem: el.symbol,
-      type: 'valence',
-      content: primeraVal,
-      sub: 'VALENCIA',
-      valences: el.val
-    });
+  seleccionados.forEach((elem, index) => {
+    deck.push({ idElem: index, type: 'symbol', content: elem.symbol, valences: elem.val, matched: false });
+    deck.push({ idElem: index, type: 'name', content: elem.name, valences: elem.val, matched: false });
+    deck.push({ idElem: index, type: 'valence', content: elem.val, valences: elem.val, matched: false });
   });
 
-  // Agregar Poderes Especiales
-  cards.push({ idElem: 'POWER_BOMB', type: 'power_bomb', content: '💣', sub: 'BOMBA', valences: '' });
-  cards.push({ idElem: 'POWER_TORNADO', type: 'power_tornado', content: '🌪️', sub: 'TORNADO', valences: '' });
+  deck.push({ type: 'power_bomb', content: '💣', matched: false });
+  deck.push({ type: 'power_tornado', content: '🌪️', matched: false });
 
-  return cards.sort(() => Math.random() - 0.5);
+  return deck.sort(() => Math.random() - 0.5);
 }
 
 io.on('connection', (socket) => {
-  socket.on('createRoom', ({ nombre, tiempo, categorias }) => {
-    const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+  socket.on('createRoom', ({ nombre, tiempo }) => {
+    const roomId = generarCodigo();
     rooms[roomId] = {
-      host: socket.id,
-      nombre: nombre || 'Concurso Química',
-      tiempoTotal: parseInt(tiempo) || 60,
-      tiempoRestante: parseInt(tiempo) || 60,
-      categorias: categorias || [],
-      intervalId: null,
-      players: []
+      nombre,
+      tiempo: parseInt(tiempo) || 60,
+      hostId: socket.id,
+      players: [],
+      state: 'waiting'
     };
     socket.join(roomId);
     socket.emit('roomCreated', { roomId });
   });
 
   socket.on('joinRoom', ({ roomId, playerName }) => {
-    if (rooms[roomId]) {
-      socket.join(roomId);
-      rooms[roomId].players.push({ id: socket.id, name: playerName, points: 0 });
-      io.to(roomId).emit('playerJoined', { players: rooms[roomId].players });
-    } else {
-      socket.emit('errorMsg', 'La sala especificada no existe.');
+    const room = rooms[roomId];
+    if (!room) {
+      socket.emit('errorMsg', 'La sala no existe o venció.');
+      return;
     }
+
+    const nuevoJugador = { id: socket.id, name: playerName, points: 0 };
+    room.players.push(nuevoJugador);
+    socket.join(roomId);
+
+    io.to(roomId).emit('playerJoined', { players: room.players });
   });
 
   socket.on('startGameHost', ({ roomId, elements }) => {
     const room = rooms[roomId];
-    if (room && room.host === socket.id) {
-      const deck = generateDeck(elements, room.categorias);
-      
-      room.players.forEach(p => p.points = 0);
-      room.tiempoRestante = room.tiempoTotal;
+    if (!room) return;
 
-      io.to(roomId).emit('gameStart', { deck, tiempo: room.tiempoRestante });
+    room.state = 'playing';
+    const deck = generarMazo(elements);
 
-      if (room.intervalId) clearInterval(room.intervalId);
+    io.to(roomId).emit('gameStart', { deck, tiempo: room.tiempo });
 
-      room.intervalId = setInterval(() => {
-        room.tiempoRestante--;
-        io.to(roomId).emit('timerUpdate', { tiempoRestante: room.tiempoRestante });
+    let tiempoRestante = room.tiempo;
+    room.timer = setInterval(() => {
+      tiempoRestante--;
+      io.to(roomId).emit('timerUpdate', { tiempoRestante });
 
-        if (room.tiempoRestante <= 0) {
-          clearInterval(room.intervalId);
-          room.intervalId = null;
-          io.to(roomId).emit('gameOver', { players: room.players });
-        }
-      }, 1000);
-    }
+      if (tiempoRestante <= 0) {
+        clearInterval(room.timer);
+        room.state = 'ended';
+        io.to(roomId).emit('gameOver', { players: room.players });
+      }
+    }, 1000);
   });
 
   socket.on('updateScore', ({ roomId, points }) => {
     const room = rooms[roomId];
-    if (room) {
-      const player = room.players.find(p => p.id === socket.id);
-      if (player) {
-        player.points = points;
-        room.players.sort((a, b) => b.points - a.points);
-        io.to(roomId).emit('rankingUpdate', { players: room.players });
-      }
+    if (!room) return;
+
+    const player = room.players.find(p => p.id === socket.id);
+    if (player) {
+      player.points = points;
+      room.players.sort((a, b) => b.points - a.points);
+      io.to(roomId).emit('rankingUpdate', { players: room.players });
     }
   });
 
@@ -130,14 +98,12 @@ io.on('connection', (socket) => {
       const index = room.players.findIndex(p => p.id === socket.id);
       if (index !== -1) {
         room.players.splice(index, 1);
-        io.to(roomId).emit('playerJoined', { players: room.players });
         io.to(roomId).emit('rankingUpdate', { players: room.players });
+        break;
       }
     }
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor en puerto ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Servidor activo en el puerto ${PORT}`));
