@@ -8,9 +8,6 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static('public'));
 
-// ==========================================
-// BASE DE DATOS COMPLETA DE METALES
-// ==========================================
 const DB_ELEMENTOS = [
   // Monovalentes (+1)
   { nombre: 'Litio', simbolo: 'Li', valencia: '+1' },
@@ -42,15 +39,15 @@ const DB_ELEMENTOS = [
   { nombre: 'Actinio', simbolo: 'Ac', valencia: '+3' },
   { nombre: 'Lutecio', simbolo: 'Lu', valencia: '+3' },
 
-  // Mono-divalentes (+1, +2)
+  // Mono-divalentes
   { nombre: 'Cobre', simbolo: 'Cu', valencia: '+1, +2' },
   { nombre: 'Mercurio', simbolo: 'Hg', valencia: '+1, +2' },
 
-  // Mono-trivalentes (+1, +3)
+  // Mono-trivalentes
   { nombre: 'Oro', simbolo: 'Au', valencia: '+1, +3' },
   { nombre: 'Talio', simbolo: 'Tl', valencia: '+1, +3' },
 
-  // Di-trivalentes (+2, +3)
+  // Di-trivalentes
   { nombre: 'Hierro', simbolo: 'Fe', valencia: '+2, +3' },
   { nombre: 'Cobalto', simbolo: 'Co', valencia: '+2, +3' },
   { nombre: 'Níquel', simbolo: 'Ni', valencia: '+2, +3' },
@@ -59,7 +56,7 @@ const DB_ELEMENTOS = [
   { nombre: 'Yterbio', simbolo: 'Yb', valencia: '+2, +3' },
   { nombre: 'Tulio', simbolo: 'Tm', valencia: '+2, +3' },
 
-  // Di-tetravalentes (+2, +4)
+  // Di-tetravalentes
   { nombre: 'Plomo', simbolo: 'Pb', valencia: '+2, +4' },
   { nombre: 'Germanio', simbolo: 'Ge', valencia: '+2, +4' },
   { nombre: 'Estaño', simbolo: 'Sn', valencia: '+2, +4' },
@@ -88,25 +85,21 @@ const salas = {};
 
 io.on('connection', (socket) => {
 
-  // CREAR SALA (ANFITRIÓN)
-  socket.on('crear_sala', ({ numElementos }) => {
+  socket.on('crear_sala', () => {
     const codigoSala = Math.floor(100000 + Math.random() * 900000).toString();
-    const elementosCount = parseInt(numElementos, 10) || 8;
 
     salas[codigoSala] = {
       anfitrion: socket.id,
       estado: 'esperando',
-      numElementos: elementosCount,
       jugadores: [],
       tablero: [],
       puntuaciones: {}
     };
 
     socket.join(codigoSala);
-    socket.emit('sala_creada', { codigoSala, numElementos: elementosCount });
+    socket.emit('sala_creada', { codigoSala });
   });
 
-  // UNIRSE A SALA (CONCURSANTE)
   socket.on('unirse_sala', ({ codigoSala, nickname }) => {
     const sala = salas[codigoSala];
 
@@ -125,8 +118,7 @@ io.on('connection', (socket) => {
     io.to(codigoSala).emit('actualizar_lista_espera', { jugadores: sala.jugadores });
   });
 
-  // INICIAR CONCURSO
-  socket.on('iniciar_concurso', ({ codigoSala }) => {
+  socket.on('iniciar_concurso', ({ codigoSala, numElementos }) => {
     const sala = salas[codigoSala];
     if (!sala || sala.anfitrion !== socket.id) return;
 
@@ -134,7 +126,8 @@ io.on('connection', (socket) => {
       return socket.emit('error_inicio', 'No hay jugadores en la sala.');
     }
 
-    sala.tablero = generarTablero(sala.numElementos);
+    const cantidad = parseInt(numElementos, 10) || 8;
+    sala.tablero = generarTablero(cantidad);
     sala.estado = 'jugando';
 
     io.to(codigoSala).emit('concurso_iniciado', {
@@ -143,7 +136,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // SELECCIONAR CARTA
   socket.on('seleccionar_carta', ({ codigoSala, cartaId }) => {
     const sala = salas[codigoSala];
     if (!sala || sala.estado !== 'jugando') return;
@@ -155,7 +147,6 @@ io.on('connection', (socket) => {
     io.to(codigoSala).emit('actualizar_tablero', { tablero: sala.tablero });
   });
 
-  // DESCONEXIÓN
   socket.on('disconnect', () => {
     for (const codigo in salas) {
       const sala = salas[codigo];
