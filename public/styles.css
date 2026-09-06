@@ -4,6 +4,7 @@
   --accent-neon: #38bdf8;
   --accent-pink: #f43f5e;
   --accent-green: #22c55e;
+  --accent-gold: #eab308;
   --text-main: #f8fafc;
 }
 
@@ -25,14 +26,15 @@ body {
 }
 
 .glass-panel {
-  background: rgba(30, 41, 59, 0.75);
+  background: rgba(30, 41, 59, 0.85);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
   padding: 30px;
   width: 100%;
-  max-width: 950px;
+  max-width: 980px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  position: relative;
 }
 
 h1, h2 {
@@ -43,11 +45,21 @@ h1, h2 {
   -webkit-text-fill-color: transparent;
 }
 
+.subtitle {
+  text-align: center;
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
 .grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
   margin-top: 20px;
+}
+
+.grid-juego {
+  grid-template-columns: 1fr 280px;
 }
 
 .input-group {
@@ -92,6 +104,10 @@ input:focus, select:focus {
   margin-top: 10px;
 }
 
+.btn-green {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
 .btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(168, 85, 247, 0.4);
@@ -127,15 +143,21 @@ input:focus, select:focus {
   cursor: pointer;
 }
 
+.header-juego {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 12px;
-  margin-top: 20px;
 }
 
 .card-3d {
-  height: 120px;
+  height: 110px;
   perspective: 1000px;
   cursor: pointer;
 }
@@ -145,7 +167,7 @@ input:focus, select:focus {
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-3d.flipped .card-inner {
@@ -162,7 +184,7 @@ input:focus, select:focus {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px;
+  padding: 8px;
   text-align: center;
   border: 1px solid rgba(255,255,255,0.1);
 }
@@ -177,23 +199,45 @@ input:focus, select:focus {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   transform: rotateY(180deg);
   font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.card-back.card-poder {
+  background: linear-gradient(135deg, #f43f5e, #be123c);
+  border: 2px solid var(--accent-gold);
 }
 
 .card-3d.matched {
   opacity: 0;
   visibility: hidden;
-  transition: 0.5s;
+  transition: 0.4s;
 }
 
 .badge-type {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.4);
   margin-top: 5px;
 }
 
-.oculto {
-  display: none !important;
+.event-banner {
+  background: var(--accent-pink);
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+  animation: pulse 1s infinite alternate;
 }
+
+@keyframes pulse {
+  from { transform: scale(0.98); }
+  to { transform: scale(1.01); }
+}
+
+.text-neon { color: var(--accent-neon); }
+.text-pink { color: var(--accent-pink); }
+.oculto { display: none !important; }
