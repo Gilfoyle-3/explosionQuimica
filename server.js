@@ -16,7 +16,9 @@ function generarCodigo() {
 
 function generarMazo(elementos) {
   let deck = [];
-  const seleccionados = [...elementos].sort(() => Math.random() - 0.5).slice(0, 5);
+  // Selecciona hasta 8 elementos al azar para un tablero más grande y variado
+  const cantidadElementos = Math.min(elementos.length, 8);
+  const seleccionados = [...elementos].sort(() => Math.random() - 0.5).slice(0, cantidadElementos);
 
   seleccionados.forEach((elem, index) => {
     deck.push({ idElem: index, type: 'symbol', content: elem.symbol, valences: elem.val, matched: false });
@@ -24,6 +26,7 @@ function generarMazo(elementos) {
     deck.push({ idElem: index, type: 'valence', content: elem.val, valences: elem.val, matched: false });
   });
 
+  // Power-ups incluidos en la mezcla
   deck.push({ type: 'power_bomb', content: '💣', matched: false });
   deck.push({ type: 'power_tornado', content: '🌪️', matched: false });
 
