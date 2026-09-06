@@ -10,16 +10,12 @@
   --radius: 12px;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: radial-gradient(circle at top, #1e1b4b, #0f172a);
   color: var(--text-main);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Rajdhani', system-ui, sans-serif;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -30,18 +26,14 @@ body {
 .cyber-container {
   width: 100%;
   max-width: 900px;
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(30, 41, 59, 0.85);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  padding: 20px;
 }
 
-.hud-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
+.hud-header { text-align: center; margin-bottom: 20px; }
 
 .glitch {
   font-size: 2.2rem;
@@ -51,139 +43,87 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-.subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  margin-top: 4px;
-}
+.subtitle { color: var(--text-muted); font-size: 0.9rem; text-align: center; }
 
-.seccion {
-  display: none;
-}
+.seccion { display: none; }
+.seccion.activa { display: flex; flex-direction: column; gap: 14px; }
 
-.seccion.activa {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.cyber-title { text-align: center; font-size: 1.3rem; color: var(--accent-cyan); }
 
-.cyber-title {
-  text-align: center;
-  font-size: 1.3rem;
-  color: var(--accent-cyan);
-}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cyber-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
+.cyber-label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
 
 .cyber-input {
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--radius);
-  padding: 12px 16px;
+  padding: 12px;
   color: #fff;
   font-size: 1rem;
   outline: none;
-  transition: border 0.2s;
 }
 
-.cyber-input:focus {
-  border-color: var(--accent-cyan);
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.5);
+  padding: 10px;
+  border-radius: var(--radius);
 }
 
-.hud-controls {
+.checkbox-group label {
+  font-size: 0.85rem;
   display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 10px;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
 }
 
-.hud-controls.vertical {
-  flex-direction: column;
-}
+.hud-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.hud-controls.vertical { flex-direction: column; }
 
 .cyber-btn {
-  padding: 14px 20px;
+  padding: 12px 18px;
   border-radius: var(--radius);
   border: none;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: transform 0.15s, opacity 0.2s;
 }
 
-.cyber-btn:active {
-  transform: scale(0.97);
-}
+.cyber-btn.primary { background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: #fff; }
+.cyber-btn.warning { background: linear-gradient(135deg, var(--accent-amber), #d97706); color: #fff; }
+.cyber-btn.secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-main); }
 
-.cyber-btn.primary {
-  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
-  color: #fff;
-}
-
-.cyber-btn.warning {
-  background: linear-gradient(135deg, var(--accent-amber), #d97706);
-  color: #fff;
-}
-
-.cyber-btn.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-main);
-}
-
-/* MARCADOR / JUEGO */
 .hud-stats {
   display: flex;
   justify-content: space-around;
   background: rgba(15, 23, 42, 0.6);
-  padding: 14px;
+  padding: 10px;
   border-radius: var(--radius);
-  margin-bottom: 10px;
 }
 
-.stat-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-box .label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.stat-box .value {
-  font-size: 1.5rem;
-  font-weight: 800;
-}
+.stat-box { display: flex; flex-direction: column; align-items: center; }
+.stat-box .label { font-size: 0.75rem; color: var(--text-muted); }
+.stat-box .value { font-size: 1.4rem; font-weight: 800; }
 
 .neon-green { color: var(--accent-green); }
 .neon-cyan { color: var(--accent-cyan); }
 .neon-pink { color: var(--accent-purple); }
 
-/* GRID DE CARTAS RESPONSIVO */
+/* CARTAS */
 .grid-cartas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
   max-height: 60vh;
   overflow-y: auto;
-  padding: 5px;
 }
 
 .card {
-  height: 95px;
+  height: 90px;
   background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
@@ -193,74 +133,14 @@ body {
   align-items: center;
   cursor: pointer;
   text-align: center;
-  padding: 6px;
-  user-select: none;
-  transition: transform 0.2s, background 0.2s, border 0.2s;
+  padding: 4px;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-cyan);
-}
+.card.flipped { background: rgba(6, 182, 212, 0.2); border-color: var(--accent-cyan); }
+.card.matched { background: rgba(16, 185, 129, 0.2); border-color: var(--accent-green); opacity: 0.5; }
 
-.card.flipped {
-  background: rgba(6, 182, 212, 0.2);
-  border-color: var(--accent-cyan);
-}
+.card .symbol { font-size: 1.2rem; font-weight: 700; }
+.card .type-tag { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
-.card.matched {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: var(--accent-green);
-  cursor: default;
-  opacity: 0.6;
-}
-
-.card .symbol {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.card .type-tag {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* TABLA DE RANKING EN VIVO */
-.table-container {
-  overflow-x: auto;
-}
-
-.cyber-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: rgba(15, 23, 42, 0.5);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.cyber-table th, .cyber-table td {
-  padding: 12px 16px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.cyber-table th {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--accent-cyan);
-  font-size: 0.85rem;
-}
-
-.cyber-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cyber-list li {
-  background: rgba(15, 23, 42, 0.6);
-  padding: 10px;
-  border-radius: var(--radius);
-  text-align: center;
-}
+.cyber-table { width: 100%; border-collapse: collapse; }
+.cyber-table th, .cyber-table td { padding: 10px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
