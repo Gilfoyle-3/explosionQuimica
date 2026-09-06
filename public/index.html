@@ -3,100 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Química Pro Engine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <title>Quiz Química - Concurso en Vivo</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="glass-panel">
-  <!-- BANNER EVENTOS -->
-  <div id="banner-evento" class="event-banner oculto"></div>
-
-  <!-- VISTA 1: CONFIGURACIÓN E INGRESO -->
-  <div id="vista-inicio">
-    <h1>⚛️ Química Pro Engine</h1>
-    <div class="grid-container">
-      <div>
-        <h2>Crear Sala</h2>
-        <button class="btn" onclick="crearSala()">✨ Crear Concurso</button>
-      </div>
-      <div>
-        <h2>Unirse a Juego</h2>
-        <div class="input-group">
-          <label>Código de Sala</label>
-          <input type="text" id="input-codigo" placeholder="Ej: 549210">
-        </div>
-        <div class="input-group">
-          <label>Tu Apodo</label>
-          <input type="text" id="input-nickname" placeholder="Ej: ProfeQuimico">
-        </div>
-        <button class="btn btn-green" onclick="unirseSala()">🚀 Entrar a Sala</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- VISTA 2: LOBBY DE ESPERA -->
-  <div id="vista-lobby" class="oculto">
-    <h2>Sala: <span id="lbl-codigo" class="text-neon">------</span></h2>
-    <p class="subtitle">Comparte el código con tus alumnos o participantes</p>
-
-    <div class="grid-container">
-      <div id="panel-configuracion">
-        <h3>⚙️ Ajustes del Juego</h3>
-        <div class="input-group">
-          <label>Nombre del Concurso</label>
-          <input type="text" id="cfg-nombre" value="Gran Torneo Química">
-        </div>
-        <div class="input-group">
-          <label>Duración (Segundos)</label>
-          <input type="number" id="cfg-tiempo" value="120">
-        </div>
-        <div class="input-group">
-          <label>Cantidad de Elementos (Tríos)</label>
-          <select id="cfg-elementos">
-            <option value="4">4 Elementos (12 Cartas)</option>
-            <option value="8" selected>8 Elementos (24 Cartas)</option>
-            <option value="12">12 Elementos (36 Cartas)</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="checkbox-item">
-            <input type="checkbox" id="cfg-poderes" checked> ⚡ Incluir Cartas de Poder (Bomba, Tornado, etc.)
-          </label>
-        </div>
-        <div class="input-group">
-          <label>Familias Permitidas</label>
-          <div id="lista-familias" class="checkbox-grid"></div>
-        </div>
-        <button class="btn" id="btn-iniciar" onclick="iniciarConcurso()">🔥 Comenzar Concurso</button>
-      </div>
-
-      <div>
-        <h3>👥 Jugadores en Sala</h3>
-        <div id="lista-jugadores"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- VISTA 3: TABLERO INTERACTIVO -->
-  <div id="vista-juego" class="oculto">
-    <div class="header-juego">
-      <h2 id="txt-titulo-concurso">Química Pro</h2>
-      <h3 class="text-pink">⏱️ <span id="txt-cronometro">120</span>s</h3>
-    </div>
+  <div class="app-container">
     
-    <div class="grid-container grid-juego">
-      <div id="tablero-cartas" class="board-grid"></div>
-      <div>
-        <h3>🏆 Marcador Live</h3>
-        <div id="tabla-puntuaciones"></div>
+    <!-- LOBBY -->
+    <div id="view-lobby" class="view active">
+      <h1>Quiz Química Multijugador</h1>
+      <div class="lobby-grid">
+        
+        <!-- Crear Sala -->
+        <div class="card-box">
+          <h2>Crear Concurso (Creador)</h2>
+          <input type="text" id="create-title" placeholder="Nombre del Concurso">
+          
+          <label>Familia de la Tabla:</label>
+          <select id="create-category">
+            <option value="todos">Todas las Familias (Metales y No Metales)</option>
+            <option value="metales">Solo Metales</option>
+            <option value="nometales">Solo No Metales</option>
+          </select>
+
+          <label>Duración (minutos):</label>
+          <input type="number" id="create-duration" value="5" min="1" max="30">
+          
+          <label>Cantidad de Elementos (Tríos):</label>
+          <input type="number" id="create-elements" value="8" min="4" max="40">
+          
+          <button class="btn btn-gold" onclick="handleCreateRoom()">Generar Sala</button>
+        </div>
+
+        <!-- Unirse a Sala -->
+        <div class="card-box">
+          <h2>Unirse como Jugador</h2>
+          <input type="text" id="join-name" placeholder="Tu Nombre o Apodo">
+          <input type="text" id="join-code" placeholder="Código de 6 dígitos">
+          <button class="btn btn-blue" onclick="handleJoinRoom()">Entrar a la Sala</button>
+        </div>
+
       </div>
     </div>
-  </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="app.js"></script>
+    <!-- ESPERA CREADOR -->
+    <div id="view-host-lobby" class="view">
+      <h2>Panel del Creador</h2>
+      <p>Comparte este código con los concursantes:</p>
+      <div class="room-code" id="host-code-display">------</div>
+      
+      <h3>Jugadores Conectados (<span id="player-count">0</span>):</h3>
+      <ul id="host-player-list" class="user-list"></ul>
+
+      <button class="btn btn-green btn-large" onclick="handleStartGame()">🚀 Iniciar Concurso Ahora</button>
+    </div>
+
+    <!-- ESPERA JUGADOR -->
+    <div id="view-player-waiting" class="view">
+      <h2>¡Estás dentro! Esperando al creador...</h2>
+      <div class="rules-box">
+        <h3>📜 Reglas del Juego:</h3>
+        <ul>
+          <li>Debes voltear <strong>3 cartas</strong> para formar un trío correcto: <strong>Elemento + Símbolo + Valencias</strong>.</li>
+          <li><strong>🌪️ Poder Tornado:</strong> Mezcla aleatoriamente las cartas no adivinadas del tablero.</li>
+          <li><strong>💣 Carta Bomba:</strong> Revela por 2 segundos un área de 3x3 alrededor de la casilla presionada.</li>
+          <li>¡Suma puntos y alcanza la cima del ranking antes de que termine el tiempo!</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ESPECTADOR CREADOR -->
+    <div id="view-host-live" class="view">
+      <div class="top-bar">
+        <h2 id="live-title">Concurso en Vivo</h2>
+        <div class="timer-display">Tiempo Restante: <span id="host-timer">00:00</span></div>
+      </div>
+      
+      <h3>🏆 Ranking en Tiempo Real</h3>
+      <ul id="host-live-leaderboard" class="ranking-list"></ul>
+    </div>
+
+    <!-- TABLERO JUGADOR -->
+    <div id="view-player-game" class="view">
+      <div class="game-header">
+        <div>Tiempo: <span id="player-timer">00:00</span></div>
+        <div>Puntos: <span id="player-score">0</span></div>
+      </div>
+
+      <div class="board-layout">
+        <div class="cards-grid" id="board-grid"></div>
+        
+        <div class="controls-panel">
+          <h3>Poderes Especiales</h3>
+          <button class="btn btn-purple" id="btn-tornado" onclick="triggerTornado()">🌪️ Tornado (Mezclar)</button>
+          <button class="btn btn-red" id="btn-bomba" onclick="armBombMode()">💣 Activar Bomba (3x3)</button>
+
+          <h3>Posiciones</h3>
+          <ul id="player-live-leaderboard" class="ranking-list mini"></ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
