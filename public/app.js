@@ -1,202 +1,156 @@
 const socket = io();
-
-// DOM
-const seccionLogin = document.getElementById('seccion-login');
-const seccionLobby = document.getElementById('seccion-lobby');
-const seccionJuego = document.getElementById('seccion-juego');
-
-// Inputs & Buttons
-const btnCrearSala = document.getElementById('btn-crear-sala');
-const btnUnirse = document.getElementById('btn-unirse');
-const inputNickname = document.getElementById('input-nickname');
-const inputCodigo = document.getElementById('input-codigo');
-const mensajeError = document.getElementById('mensaje-error');
-
-// Lobby
-const lobbyCodigoDisplay = document.getElementById('lobby-codigo-display');
-const panelAnfitrionConfig = document.getElementById('panel-anfitrion-config');
-const panelAnfitrionControles = document.getElementById('panel-anfitrion-controles');
-const inputNombreConcurso = document.getElementById('input-nombre-concurso');
-const inputDuracion = document.getElementById('input-duracion');
-const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
-const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
-const listaJugadores = document.getElementById('lista-jugadores');
-
-// Juego
-const juegoTituloDisplay = document.getElementById('juego-titulo-display');
-const cronometro = document.getElementById('cronometro');
-const vistaAnfitrion = document.getElementById('vista-anfitrion');
-const vistaJugador = document.getElementById('vista-jugador');
-const rankingAnfitrionLista = document.getElementById('ranking-anfitrion-lista');
-const leaderboardMini = document.getElementById('leaderboard-mini');
-const tableroCartas = document.getElementById('tablero-cartas');
-
-let miCodigoSala = null;
+let miCodigoSala = '';
 let esAnfitrion = false;
 
-// Crear Sala
-btnCrearSala.addEventListener('click', () => {
-  socket.emit('crear_sala');
-});
+// ==========================================
+// ACCIONES DEL JUGADOR
+// ==========================================
 
-socket.on('sala_creada', ({ codigoSala }) => {
+function crearSala() {
+  socket.emit('crear_sala');
+}
+
+function unirseSala() {
+  const codigoSala = document.getElementById('input-codigo').value.trim();
+  const nickname = document.getElementById('input-nickname').value.trim();
+  socket.emit('unirse_sala', { codigoSala, nickname });
+}
+
+function iniciarConcurso() {
+  const nombreConcurso = document.getElementById('cfg-nombre').value;
+  const duracionSegundos = document.getElementById('cfg-tiempo').value;
+  const cantidadElementos = document.getElementById('cfg-elementos').value;
+
+  const familias = [];
+  document.querySelectorAll('.fam-check:checked').forEach(cb => familias.push(cb.value));
+
+  socket.emit('iniciar_concurso', {
+    codigoSala: miCodigoSala,
+    nombreConcurso,
+    duracionSegundos,
+    cantidadElementos,
+    familias
+  });
+}
+
+// ==========================================
+// LISTENERS DE SOCKET.IO
+// ==========================================
+
+socket.on('sala_creada', ({ codigoSala, familiasDisponibles }) => {
   miCodigoSala = codigoSala;
   esAnfitrion = true;
+  
+  document.getElementById('lbl-codigo').innerText = codigoSala;
+  document.getElementById('vista-inicio').classList.add('oculto');
+  document.getElementById('vista-lobby').classList.remove('oculto');
 
-  seccionLogin.classList.add('hidden');
-  seccionLobby.classList.remove('hidden');
-  lobbyCodigoDisplay.textContent = codigoSala;
+  const contFamilias = document.getElementById('lista-familias');
+  contFamilias.innerHTML = '';
+  familiasDisponibles.forEach(fam => {
+    contFamilias.innerHTML += `
+      <label class="checkbox-item">
+        <input type="checkbox" class="fam-check" value="${fam}" checked> ${fam}
+      </label>
+    `;
+  });
 
-  panelAnfitrionConfig.classList.remove('hidden');
-  panelAnfitrionControles.classList.remove('hidden');
-  pantallaEsperaConcursante.classList.add('hidden');
-});
-
-// Unirse
-btnUnirse.addEventListener('click', () => {
-  const nickname = inputNickname.value.trim();
-  const codigoSala = inputCodigo.value.trim().toUpperCase();
-
-  if (!nickname || !codigoSala) {
-    mensajeError.textContent = 'Ingresa tu apodo y el código.';
-    return;
-  }
-
-  socket.emit('unirse_sala', { codigoSala, nickname });
+  socket.emit('unirse_sala', { codigoSala, nickname: 'Anfitrión (Host)' });
 });
 
 socket.on('unido_exitosamente', ({ codigoSala }) => {
   miCodigoSala = codigoSala;
-  esAnfitrion = false;
+  document.getElementById('lbl-codigo').innerText = codigoSala;
+  document.getElementById('vista-inicio').classList.add('oculto');
+  document.getElementById('vista-lobby').classList.remove('oculto');
 
-  seccionLogin.classList.add('hidden');
-  seccionLobby.classList.remove('hidden');
-  lobbyCodigoDisplay.textContent = codigoSala;
-
-  panelAnfitrionConfig.classList.add('hidden');
-  panelAnfitrionControles.classList.add('hidden');
-  pantallaEsperaConcursante.classList.remove('hidden');
+  if (!esAnfitrion) {
+    document.getElementById('panel-configuracion').style.opacity = '0.5';
+    document.getElementById('panel-configuracion').style.pointerEvents = 'none';
+    document.getElementById('btn-iniciar').classList.add('oculto');
+  }
 });
-
-socket.on('error_login', (msg) => { mensajeError.textContent = msg; });
 
 socket.on('actualizar_lista_espera', ({ jugadores }) => {
-  listaJugadores.innerHTML = '';
-  jugadores.forEach((j) => {
-    const li = document.createElement('li');
-    li.className = 'jugador-item';
-    li.textContent = `🎮 ${j.nickname}`;
-    listaJugadores.appendChild(li);
+  const cont = document.getElementById('lista-jugadores');
+  cont.innerHTML = '';
+  jugadores.forEach(j => {
+    cont.innerHTML += `
+      <div class="player-badge">
+        <span>👤 ${j.nickname}</span>
+        <span style="color:var(--accent-neon)">Listo</span>
+      </div>
+    `;
   });
-});
-
-// Iniciar Partida
-btnIniciarConcurso.addEventListener('click', () => {
-  if (miCodigoSala && esAnfitrion) {
-    const familiasChecks = document.querySelectorAll('#contenedor-familias input:checked');
-    const familias = Array.from(familiasChecks).map(c => c.value);
-
-    socket.emit('iniciar_concurso', {
-      codigoSala: miCodigoSala,
-      nombreConcurso: inputNombreConcurso.value.trim() || 'Torneo Química Pro',
-      duracionSegundos: parseInt(inputDuracion.value, 10) || 120,
-      familias
-    });
-  }
 });
 
 socket.on('concurso_iniciado', ({ tablero, puntuaciones, nombreConcurso, duracionSegundos }) => {
-  seccionLobby.classList.add('hidden');
-  seccionJuego.classList.remove('hidden');
-  
-  juegoTituloDisplay.textContent = nombreConcurso;
-  iniciarCronometroVisual(duracionSegundos);
+  document.getElementById('vista-lobby').classList.add('oculto');
+  document.getElementById('vista-juego').classList.remove('oculto');
+  document.getElementById('txt-titulo-concurso').innerText = nombreConcurso;
 
-  if (esAnfitrion) {
-    vistaAnfitrion.classList.remove('hidden');
-    vistaJugador.classList.add('hidden');
-  } else {
-    vistaJugador.classList.remove('hidden');
-    vistaAnfitrion.classList.add('hidden');
-    renderizarTablero(tablero);
-  }
-
-  actualizarRanking(puntuaciones);
+  renderizarTablero(tablero);
+  renderizarPuntuaciones(puntuaciones);
+  iniciarTemporizador(duracionSegundos);
 });
 
-function iniciarCronometroVisual(segundos) {
-  let tiempoRestante = segundos;
-  const timer = setInterval(() => {
-    const min = Math.floor(tiempoRestante / 60);
-    const seg = tiempoRestante % 60;
-    cronometro.textContent = `${min.toString().padStart(2, '0')}:${seg.toString().padStart(2, '0')}`;
+socket.on('actualizar_tablero', ({ tablero }) => renderizarTablero(tablero));
 
-    if (tiempoRestante <= 0) {
-      clearInterval(timer);
-      cronometro.textContent = "00:00 - ¡TIEMPO!";
-    }
-    tiempoRestante--;
-  }, 1000);
-}
+socket.on('actualizar_puntuaciones', ({ puntuaciones }) => renderizarPuntuaciones(puntuaciones));
 
-function renderizarTablero(cartas) {
-  tableroCartas.innerHTML = '';
-  cartas.forEach((carta) => {
+socket.on('error_login', (msg) => alert(`Error: ${msg}`));
+socket.on('error_juego', (msg) => alert(`Atención: ${msg}`));
+
+// ==========================================
+// RENDERIZADO DE INTERFAZ (UI)
+// ==========================================
+
+function renderizarTablero(tablero) {
+  const cont = document.getElementById('tablero-cartas');
+  cont.innerHTML = '';
+
+  tablero.forEach(carta => {
     const cardEl = document.createElement('div');
-    cardEl.className = 'carta';
-    if (carta.revelada) cardEl.classList.add('revelada');
-    if (carta.emparejada) cardEl.classList.add('emparejada');
+    cardEl.className = `card-3d ${carta.revelada ? 'flipped' : ''} ${carta.emparejada ? 'matched' : ''}`;
+    cardEl.onclick = () => socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
 
-    if (carta.revelada || carta.emparejada) {
-      cardEl.innerHTML = `
-        <div class="contenido-carta ${carta.tipo}">
-          <span class="tipo-tag">${carta.tipo.toUpperCase()}</span>
-          <span class="texto-principal">${carta.contenido}</span>
+    cardEl.innerHTML = `
+      <div class="card-inner">
+        <div class="card-front">🧪</div>
+        <div class="card-back">
+          <div>${carta.contenido}</div>
+          <span class="badge-type">${carta.tipo}</span>
         </div>
-      `;
-    } else {
-      cardEl.innerHTML = `<div class="reverso">🧪</div>`;
-    }
-
-    cardEl.addEventListener('click', () => {
-      if (carta.revelada || carta.emparejada) return;
-      socket.emit('seleccionar_carta', { codigoSala: miCodigoSala, cartaId: carta.id });
-    });
-
-    tableroCartas.appendChild(cardEl);
+      </div>
+    `;
+    cont.appendChild(cardEl);
   });
 }
 
-socket.on('actualizar_tablero', ({ tablero }) => {
-  if (!esAnfitrion) renderizarTablero(tablero);
-});
-
-socket.on('actualizar_puntuaciones', ({ puntuaciones }) => {
-  actualizarRanking(puntuaciones);
-});
-
-function actualizarRanking(puntuaciones) {
-  const listaOrdenada = Object.values(puntuaciones).sort((a, b) => b.puntos - a.puntos);
-
-  if (esAnfitrion) {
-    rankingAnfitrionLista.innerHTML = '';
-    listaOrdenada.forEach((p, idx) => {
-      const card = document.createElement('div');
-      card.className = 'ranking-card';
-      card.innerHTML = `
-        <span class="ranking-pos">#${idx + 1}</span>
-        <span class="ranking-name">${p.nickname}</span>
-        <span class="ranking-pts">+${p.puntos} PTS</span>
+function renderizarPuntuaciones(puntuaciones) {
+  const cont = document.getElementById('tabla-puntuaciones');
+  cont.innerHTML = '';
+  Object.values(puntuaciones)
+    .sort((a,b) => b.puntos - a.puntos)
+    .forEach((p, idx) => {
+      cont.innerHTML += `
+        <div class="player-badge" style="border-color:${idx === 0 ? 'gold' : 'var(--accent-neon)'}">
+          <span>${idx + 1}. ${p.nickname}</span>
+          <strong>${p.puntos} pts</strong>
+        </div>
       `;
-      rankingAnfitrionLista.appendChild(card);
     });
-  } else {
-    leaderboardMini.innerHTML = '<strong>Leaderboard: </strong>';
-    listaOrdenada.forEach((p, idx) => {
-      const item = document.createElement('span');
-      item.className = 'jugador-score';
-      item.textContent = `#${idx + 1} ${p.nickname}: ${p.puntos} pts | `;
-      leaderboardMini.appendChild(item);
-    });
-  }
+}
+
+function iniciarTemporizador(segundos) {
+  let t = segundos;
+  const el = document.getElementById('txt-cronometro');
+  const timer = setInterval(() => {
+    t--;
+    el.innerText = t;
+    if (t <= 0) {
+      clearInterval(timer);
+      alert('¡Tiempo agotado! Revisa las puntuaciones finales.');
+    }
+  }, 1000);
 }
