@@ -1,11 +1,11 @@
 const socket = io();
 
-// DOM
+// Elementos HTML
 const seccionLogin = document.getElementById('seccion-login');
 const seccionLobby = document.getElementById('seccion-lobby');
 const seccionJuego = document.getElementById('seccion-juego');
 
-// Login
+// Inputs y Botones
 const btnCrearSala = document.getElementById('btn-crear-sala');
 const btnUnirse = document.getElementById('btn-unirse');
 const inputNickname = document.getElementById('input-nickname');
@@ -24,10 +24,13 @@ const btnIniciarConcurso = document.getElementById('btn-iniciar-concurso');
 const pantallaEsperaConcursante = document.getElementById('pantalla-espera-concursante');
 const listaJugadores = document.getElementById('lista-jugadores');
 
-// Juego
+// Pantalla de Juego
 const juegoTituloDisplay = document.getElementById('juego-titulo-display');
 const cronometro = document.getElementById('cronometro');
-const leaderboard = document.getElementById('leaderboard');
+const vistaAnfitrion = document.getElementById('vista-anfitrion');
+const vistaJugador = document.getElementById('vista-jugador');
+const rankingAnfitrionLista = document.getElementById('ranking-anfitrion-lista');
+const leaderboardMini = document.getElementById('leaderboard-mini');
 const tableroCartas = document.getElementById('tablero-cartas');
 
 let miCodigoSala = null;
@@ -40,7 +43,7 @@ inputNumElementos.addEventListener('input', (e) => {
   displayNumElementos.textContent = `${val} Elementos (${totalCartas} Cartas)`;
 });
 
-// Crear Sala
+// Crear Sala (Anfitrión)
 btnCrearSala.addEventListener('click', () => {
   socket.emit('crear_sala');
 });
@@ -61,13 +64,13 @@ socket.on('sala_creada', ({ codigoSala, maxElementos }) => {
   mensajeError.textContent = '';
 });
 
-// Unirse
+// Unirse a una Sala (Participante)
 btnUnirse.addEventListener('click', () => {
   const nickname = inputNickname.value.trim();
   const codigoSala = inputCodigo.value.trim().toUpperCase();
 
   if (!nickname || !codigoSala) {
-    mensajeError.textContent = 'Ingresa tu apodo y el código de sala.';
+    mensajeError.textContent = 'Por favor, completa tu apodo y el código de sala.';
     return;
   }
 
@@ -88,7 +91,9 @@ socket.on('unido_exitosamente', ({ codigoSala }) => {
   mensajeError.textContent = '';
 });
 
-socket.on('error_login', (msg) => { mensajeError.textContent = msg; });
+socket.on('error_login', (msg) => {
+  mensajeError.textContent = msg;
+});
 
 socket.on('actualizar_lista_espera', ({ jugadores }) => {
   listaJugadores.innerHTML = '';
@@ -100,7 +105,7 @@ socket.on('actualizar_lista_espera', ({ jugadores }) => {
   });
 });
 
-// Iniciar Concurso
+// Iniciar Partida
 btnIniciarConcurso.addEventListener('click', () => {
   if (miCodigoSala && esAnfitrion) {
     socket.emit('iniciar_concurso', {
@@ -119,8 +124,18 @@ socket.on('concurso_iniciado', ({ tablero, puntuaciones, nombreConcurso, duracio
   juegoTituloDisplay.textContent = nombreConcurso;
   iniciarCronometroVisual(duracionSegundos);
 
-  renderizarTablero(tablero);
-  actualizarLeaderboard(puntuaciones);
+  if (esAnfitrion) {
+    // EL CREADOR SOLO VE EL RANKING
+    vistaAnfitrion.classList.remove('hidden');
+    vistaJugador.classList.add('hidden');
+  } else {
+    // LOS JUGADORES VEN EL TABLERO INTERACTIVO
+    vistaJugador.classList.remove('hidden');
+    vistaAnfitrion.classList.add('hidden');
+    renderizarTablero(tablero);
+  }
+
+  actualizarRanking(puntuaciones);
 });
 
 function iniciarCronometroVisual(segundos) {
@@ -133,7 +148,7 @@ function iniciarCronometroVisual(segundos) {
 
     if (tiempoRestante <= 0) {
       clearInterval(timer);
-      cronometro.textContent = "00:00 - ¡TIEMPO FINALIZADO!";
+      cronometro.textContent = "00:00 - ¡CONCURSO FINALIZADO!";
     }
     tiempoRestante--;
   }, 1000);
@@ -167,16 +182,38 @@ function renderizarTablero(cartas) {
   });
 }
 
-socket.on('actualizar_tablero', ({ tablero }) => { renderizarTablero(tablero); });
-socket.on('actualizar_puntuaciones', ({ puntuaciones }) => { actualizarLeaderboard(puntuaciones); });
+socket.on('actualizar_tablero', ({ tablero }) => {
+  if (!esAnfitrion) renderizarTablero(tablero);
+});
 
-function actualizarLeaderboard(puntuaciones) {
-  leaderboard.innerHTML = '<strong>Leaderboard:</strong> ';
+socket.on('actualizar_puntuaciones', ({ puntuaciones }) => {
+  actualizarRanking(puntuaciones);
+});
+
+function actualizarRanking(puntuaciones) {
   const listaOrdenada = Object.values(puntuaciones).sort((a, b) => b.puntos - a.puntos);
-  listaOrdenada.forEach((p, idx) => {
-    const item = document.createElement('span');
-    item.className = 'jugador-score';
-    item.textContent = `#${idx + 1} ${p.nickname}: ${p.puntos} pts | `;
-    leaderboard.appendChild(item);
-  });
+
+  if (esAnfitrion) {
+    // RANKING GRANDE PARA EL CREADOR
+    rankingAnfitrionLista.innerHTML = '';
+    listaOrdenada.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'ranking-card';
+      card.innerHTML = `
+        <span class="ranking-pos">#${idx + 1}</span>
+        <span class="ranking-name">${p.nickname}</span>
+        <span class="ranking-pts">${p.puntos} PTS</span>
+      `;
+      rankingAnfitrionLista.appendChild(card);
+    });
+  } else {
+    // MINI LEADERBOARD EN PANTALLA JUGADOR
+    leaderboardMini.innerHTML = '<strong>Ranking: </strong> ';
+    listaOrdenada.forEach((p, idx) => {
+      const item = document.createElement('span');
+      item.className = 'jugador-score';
+      item.textContent = `#${idx + 1} ${p.nickname}: ${p.puntos} pts | `;
+      leaderboardMini.appendChild(item);
+    });
+  }
 }
