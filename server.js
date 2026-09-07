@@ -144,13 +144,13 @@ io.on('connection', (socket) => {
     let deck = [];
 
     room.pool.forEach((item) => {
-      deck.push({ elementId: item.id, text: item.elem, isPower: false });
-      deck.push({ elementId: item.id, text: item.sym, isPower: false });
-      deck.push({ elementId: item.id, text: item.val, isPower: false });
+      deck.push({ matchKey: item.id, text: item.elem, isPower: false });
+      deck.push({ matchKey: item.id, text: item.sym, isPower: false });
+      deck.push({ matchKey: item.id, text: item.val, isPower: false });
     });
 
-    deck.push({ elementId: 'power_tornado', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
-    deck.push({ elementId: 'power_bomba', text: '💣 BOMBA 3X3', isPower: true, powerType: 'bomba' });
+    deck.push({ matchKey: 'power_tornado', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
+    deck.push({ matchKey: 'power_bomba', text: '💣 BOMBA 3X3', isPower: true, powerType: 'bomba' });
 
     room.deck = deck.sort(() => 0.5 - Math.random());
 
