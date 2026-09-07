@@ -64,7 +64,7 @@ function switchView(viewId) {
 
 function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
-  const duration = document.getElementById('create-duration').value;
+  const duration = document.getElementById('create-duration').value || 5;
   const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
   
   const selectedCategories = [];
@@ -108,9 +108,9 @@ socket.on('joined_waiting_room', ({ id }) => {
     rulesBox.style.cssText = "margin-top: 20px; padding: 15px; background: rgba(0, 243, 255, 0.05); border: 1px dashed var(--cyber-cyan); text-align: left; font-size: 0.9rem; color: var(--text-muted);";
     rulesBox.innerHTML = `
       <h3 style="color: var(--cyber-cyan); margin-bottom: 8px;">📜 REGLAS Y MECÁNICAS DEL CONCURSO</h3>
-      <p style="margin-bottom: 6px;">• <b>Cartas de Trío:</b> Cada elemento químico se divide en 3 cartas independientes: <b>Nombre</b>, <b>Símbolo</b> y <b>Valencia</b>.</p>
-      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan exactamente al mismo elemento para ganar puntos (+15 PTS).</p>
-      <p style="margin-bottom: 6px;">• <b>Cartas Especiales:</b> 🌪️ <b>Tornado</b> (reordena el tablero) y 💣 <b>Bomba</b> (revela un sector 3x3 por unos segundos).</p>
+      <p style="margin-bottom: 6px;">• <b>Cartas de Trío:</b> Cada elemento se divide en 3 cartas independientes: <b>Nombre</b>, <b>Símbolo</b> y <b>Valencia</b>.</p>
+      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan al mismo elemento para ganar puntos (+15 PTS).</p>
+      <p style="margin-bottom: 6px;">• <b>Cartas Especiales:</b> 🌪️ <b>Tornado</b> (mezcla el tablero) y 💣 <b>Bomba</b> (revela un sector 3x3 secuencialmente).</p>
       <p style="color: var(--cyber-yellow); margin-top: 8px; text-align: center;">⏳ Esperando a que el creador del concurso inicie la partida...</p>
     `;
     waitingView.appendChild(rulesBox);
@@ -154,8 +154,7 @@ socket.on('update_player_list', (players) => {
 });
 
 socket.on('update_leaderboard', (players) => {
-  renderLeaderboard(players, 'host-live-leaderboard', 'player-count');
-  renderLeaderboard(players, 'player-live-leaderboard', 'game-player-count');
+  renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
 });
 
 function handleStartGame() {
@@ -202,7 +201,7 @@ function handleCardClick(cardEl, index) {
       if (cardEl.dataset.powerType === 'tornado') {
         socket.emit('trigger_global_tornado', currentRoomCode);
       } else if (cardEl.dataset.powerType === 'bomba') {
-        executeBombEffect(index);
+        socket.emit('trigger_global_bomb', { roomCode: currentRoomCode, centerIndex: index });
       }
       cardEl.classList.add('matched');
     }, 200);
@@ -257,28 +256,32 @@ socket.on('apply_tornado', () => {
   cards.forEach(c => grid.appendChild(c));
 });
 
-function executeBombEffect(centerIndex) {
+socket.on('apply_bomb', (centerIndex) => {
   const allCards = Array.from(document.querySelectorAll('.card'));
-  const columns = window.innerWidth <= 768 ? 3 : 4;
+  const columns = window.innerWidth <= 600 ? 3 : 4;
   const row = Math.floor(centerIndex / columns);
   const col = centerIndex % columns;
 
-  allCards.forEach((c, idx) => {
+  const targetCards = allCards.filter((c, idx) => {
     const r = Math.floor(idx / columns);
     const cCol = idx % columns;
-
-    if (Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1) {
-      if (!c.classList.contains('matched')) {
-        c.classList.add('bomb-highlight');
-        c.innerText = c.dataset.text;
-        setTimeout(() => {
-          if (!c.classList.contains('flipped')) c.innerText = '[ ? ]';
-          c.classList.remove('bomb-highlight');
-        }, 1200);
-      }
-    }
+    return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched');
   });
-}
+
+  targetCards.forEach((c, index) => {
+    setTimeout(() => {
+      c.classList.add('bomb-highlight');
+      c.innerText = c.dataset.text;
+
+      setTimeout(() => {
+        if (!c.classList.contains('flipped')) {
+          c.innerText = '[ ? ]';
+        }
+        c.classList.remove('bomb-highlight');
+      }, 2000);
+    }, index * 250);
+  });
+});
 
 socket.on('timer_tick', (seconds) => {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -290,43 +293,26 @@ socket.on('timer_tick', (seconds) => {
 });
 
 socket.on('game_over', (players) => {
-  if (isHostUser) {
-    const hostLive = document.getElementById('view-host-live');
-    if (hostLive) {
-      hostLive.innerHTML = `
-        <div style="text-align: center; padding: 50px; background: #030712; border: 1px solid var(--cyber-cyan); max-width: 600px; margin: 40px auto;">
-          <h2 style="color: var(--cyber-yellow); font-size: 2rem; margin-bottom: 15px;">🏆 ¡CONCURSO FINALIZADO!</h2>
-          <p style="color: var(--text-muted); margin-bottom: 25px;">El tiempo ha terminado. Gracias por organizar la partida.</p>
-          <button class="btn btn-cyan btn-large" onclick="window.location.reload()">◀ VOLVER AL INICIO</button>
-        </div>
-      `;
-    }
-  } else {
-    const playerGame = document.getElementById('view-player-game');
-    if (playerGame) {
-      const myRankData = players.find(p => p.id === mySocketId);
-      const myRankIndex = players.findIndex(p => p.id === mySocketId) + 1;
-      
-      playerGame.innerHTML = `
-        <div style="text-align: center; padding: 30px; background: #030712; border: 1px solid var(--cyber-cyan); max-width: 600px; margin: 20px auto;">
-          <h2 style="color: var(--cyber-yellow); font-size: 1.8rem; margin-bottom: 10px;">🏁 ¡PARTIDA TERMINADA!</h2>
-          <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 15px;">Tu posición final: <b style="color: var(--cyber-cyan);">#${myRankIndex}</b> con <b style="color: var(--cyber-yellow);">${myRankData ? myRankData.score : 0} PTS</b></p>
-          
-          <div style="margin: 20px 0; max-height: 250px; overflow-y: auto; text-align: left; background: rgba(0,0,0,0.3); padding: 10px; border: 1px solid rgba(0,243,255,0.2);">
-            <h4 style="color: var(--cyber-cyan); margin-bottom: 10px; text-align: center;">🏆 PODIO Y RANKING FINAL</h4>
-            <ul id="final-ranking-list" style="list-style: none; padding: 0;">
-              ${players.map((p, idx) => `
-                <li style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); color: ${p.id === mySocketId ? 'var(--cyber-yellow)' : 'var(--text-main)'};">
-                  <span>#${idx + 1} - ${p.name}</span>
-                  <span><b>${p.score} PTS</b></span>
-                </li>
-              `).join('')}
-            </ul>
-          </div>
-          
-          <button class="btn btn-cyan btn-large" onclick="window.location.reload()" style="margin-top: 15px;">◀ SALIR AL INICIO</button>
-        </div>
-      `;
+  // Transicionar tanto host como jugadores al panel de resultados final con el ranking y botón de salida
+  switchView('view-host-live');
+  
+  document.getElementById('host-panel-title').innerText = "🏆 ¡CONCURSO FINALIZADO!";
+  document.getElementById('host-timer').innerText = "00:00";
+  document.getElementById('host-game-over-actions').style.display = 'block';
+
+  renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
+
+  if (!isHostUser) {
+    const myRankData = players.find(p => p.id === mySocketId);
+    const myRankIndex = players.findIndex(p => p.id === mySocketId) + 1;
+    
+    const hostLiveBox = document.querySelector('#view-host-live .card-box');
+    if (hostLiveBox && !document.getElementById('player-final-notice')) {
+      const notice = document.createElement('div');
+      notice.id = 'player-final-notice';
+      notice.style.cssText = "margin-bottom: 15px; padding: 10px; background: rgba(0, 243, 255, 0.08); border: 1px solid var(--cyber-cyan); text-align: center; border-radius: 6px;";
+      notice.innerHTML = `Tu posición final: <b style="color: var(--cyber-cyan);">#${myRankIndex}</b> con <b style="color: var(--cyber-yellow);">${myRankData ? myRankData.score : 0} PTS</b>`;
+      hostLiveBox.insertBefore(notice, hostLiveBox.querySelector('.players-container'));
     }
   }
 });
