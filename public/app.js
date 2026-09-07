@@ -222,7 +222,6 @@ function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  // Validación exacta: Las 3 cartas deben pertenecer al mismo elementId
   const id1 = c1.dataset.elementId;
   const id2 = c2.dataset.elementId;
   const id3 = c3.dataset.elementId;
@@ -233,7 +232,10 @@ function checkTrio() {
       c2.classList.add('matched');
       c3.classList.add('matched');
       myScore += 15;
-      document.getElementById('player-score').innerText = myScore;
+      
+      const scoreEl = document.getElementById('player-score');
+      if (scoreEl) scoreEl.innerText = myScore;
+
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
     }, 300);
