@@ -7,6 +7,56 @@ let myScore = 0;
 let flippedCards = [];
 let isProcessing = false;
 
+const categoriesConfig = [
+  { id: "mono", label: "🟢 Monovalentes (+1)", count: 8 },
+  { id: "di", label: "🔵 Divalentes (+2)", count: 8 },
+  { id: "tri", label: "🟣 Trivalentes (+3)", count: 9 },
+  { id: "variable", label: "🟠 Valencia Variable", count: 9 },
+  { id: "tetra", label: "🟡 Di-Tetravalentes (+2, +4)", count: 6 },
+  { id: "polivalente", label: "🔴 Polivalentes", count: 14 }
+];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('elements-selector-container');
+  if (container) {
+    container.innerHTML = categoriesConfig.map(cat => `
+      <div class="element-card-checkbox selected" onclick="toggleCategoryCard(this, '${cat.id}')">
+        <span>${cat.label}</span>
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onclick="event.stopPropagation()">
+      </div>
+    `).join('');
+    updateMaxElementLimit();
+  }
+});
+
+function toggleCategoryCard(cardEl, catId) {
+  const checkbox = cardEl.querySelector('.cat-checkbox');
+  checkbox.checked = !checkbox.checked;
+  
+  if (checkbox.checked) {
+    cardEl.classList.add('selected');
+  } else {
+    cardEl.classList.remove('selected');
+  }
+  updateMaxElementLimit();
+}
+
+function updateMaxElementLimit() {
+  const limitInput = document.getElementById('create-limit');
+  if (!limitInput) return;
+
+  let maxTotal = 0;
+  document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
+    const found = categoriesConfig.find(c => c.id === cb.value);
+    if (found) maxTotal += found.count;
+  });
+
+  limitInput.max = maxTotal || 1;
+  if (parseInt(limitInput.value) > maxTotal) {
+    limitInput.value = maxTotal;
+  }
+}
+
 function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
@@ -50,6 +100,21 @@ function handleJoinRoom() {
 socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
   switchView('view-player-waiting');
+  
+  const waitingView = document.getElementById('view-player-waiting');
+  if (waitingView && !document.getElementById('game-rules-box')) {
+    const rulesBox = document.createElement('div');
+    rulesBox.id = 'game-rules-box';
+    rulesBox.style.cssText = "margin-top: 20px; padding: 15px; background: rgba(0, 240, 255, 0.05); border: 1px dashed var(--cyber-cyan); text-align: left; font-size: 0.9rem; color: var(--text-muted); border-radius: 8px;";
+    rulesBox.innerHTML = `
+      <h3 style="color: var(--cyber-cyan); margin-bottom: 8px;">📜 REGLAS Y MECÁNICAS DEL CONCURSO</h3>
+      <p style="margin-bottom: 6px;">• <b>Cartas de Trío:</b> Cada elemento se divide en 3 cartas independientes: <b>Nombre</b>, <b>Símbolo</b> y <b>Valencia</b>.</p>
+      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan al mismo elemento para ganar puntos (+15 PTS).</p>
+      <p style="margin-bottom: 6px;">• <b>Cartas Especiales:</b> 🌪️ <b>Tornado</b> (mezcla el tablero) y 💣 <b>Bomba</b> (revela un sector 3x3 secuencialmente).</p>
+      <p style="color: var(--cyber-yellow); margin-top: 8px; text-align: center;">⏳ Esperando a que el creador del concurso inicie la partida...</p>
+    `;
+    waitingView.appendChild(rulesBox);
+  }
 });
 
 socket.on('error_message', (msg) => alert(msg));
@@ -114,18 +179,18 @@ function renderBoard(deck) {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    el.dataset.matchKey = card.matchKey;
+    el.dataset.elementId = card.elementId;
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
 
     el.innerText = '[ ? ]';
-    el.onclick = () => handleCardClick(el);
+    el.onclick = () => handleCardClick(el, index);
     grid.appendChild(el);
   });
 }
 
-function handleCardClick(cardEl) {
+function handleCardClick(cardEl, index) {
   if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
   if (cardEl.dataset.isPower === "true") {
@@ -136,7 +201,6 @@ function handleCardClick(cardEl) {
       if (cardEl.dataset.powerType === 'tornado') {
         socket.emit('trigger_global_tornado', currentRoomCode);
       } else if (cardEl.dataset.powerType === 'bomba') {
-        const index = Array.from(cardEl.parentNode.children).indexOf(cardEl);
         socket.emit('trigger_global_bomb', { roomCode: currentRoomCode, centerIndex: index });
       }
       cardEl.classList.add('matched');
@@ -154,28 +218,22 @@ function handleCardClick(cardEl) {
   }
 }
 
-// ==========================================
-// VALIDACIÓN BLINDADA DEL TRÍO
-// ==========================================
 function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  const key1 = c1.dataset.matchKey;
-  const key2 = c2.dataset.matchKey;
-  const key3 = c3.dataset.matchKey;
+  // Validación exacta: Las 3 cartas deben pertenecer al mismo elementId
+  const id1 = c1.dataset.elementId;
+  const id2 = c2.dataset.elementId;
+  const id3 = c3.dataset.elementId;
 
-  // Verificamos que las 3 cartas compartan exactamente el mismo matchKey de elemento químico
-  if (key1 && key1 === key2 && key2 === key3) {
+  if (id1 && id1 === id2 && id2 === id3) {
     setTimeout(() => {
       c1.classList.add('matched');
       c2.classList.add('matched');
       c3.classList.add('matched');
       myScore += 15;
-      
-      const scoreEl = document.getElementById('player-score');
-      if (scoreEl) scoreEl.innerText = myScore;
-
+      document.getElementById('player-score').innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
     }, 300);
@@ -186,7 +244,7 @@ function checkTrio() {
         c.innerText = '[ ? ]';
       });
       resetTurn();
-    }, 700);
+    }, 600);
   }
 }
 
