@@ -95,7 +95,7 @@ function handleJoinRoom() {
   isHostUser = false;
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
-});
+}
 
 socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
@@ -179,7 +179,7 @@ function renderBoard(deck) {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    el.dataset.matchKey = card.matchKey; // CORREGIDO: Se lee matchKey del servidor
+    el.dataset.matchKey = card.matchKey; // CORREGIDO: Toma el matchKey real que manda el servidor
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
@@ -222,7 +222,7 @@ function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  // Validación exacta: Las 3 cartas deben pertenecer estrictamente al mismo matchKey del elemento
+  // Validación exacta usando el matchKey de cada carta
   const id1 = c1.dataset.matchKey;
   const id2 = c2.dataset.matchKey;
   const id3 = c3.dataset.matchKey;
@@ -233,10 +233,7 @@ function checkTrio() {
       c2.classList.add('matched');
       c3.classList.add('matched');
       myScore += 15;
-      
-      const scoreEl = document.getElementById('player-score');
-      if (scoreEl) scoreEl.innerText = myScore;
-
+      document.getElementById('player-score').innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
     }, 300);
