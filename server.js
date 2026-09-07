@@ -183,6 +183,10 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('apply_tornado');
   });
 
+  socket.on('trigger_global_bomb', ({ roomCode, centerIndex }) => {
+    io.to(roomCode).emit('apply_bomb', centerIndex);
+  });
+
   socket.on('disconnect', () => {
     for (const code in rooms) {
       if (rooms[code].players[socket.id]) {
