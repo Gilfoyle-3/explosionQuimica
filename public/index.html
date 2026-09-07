@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChemMemory - Concurso de Valencias</title>
+  <title>Quimica - Concurso de Valencias</title>
   <link rel="stylesheet" href="style.css">
   <script src="/socket.io/socket.io.js" defer></script>
   <script src="app.js" defer></script>
@@ -17,7 +17,7 @@
     <!-- VISTA 1: INICIO -->
     <div id="view-home" class="view active">
       <div class="card-box cyber-glow">
-        <h1 class="glitch-title">CHEM<span class="text-cyan">MEMORY</span></h1>
+        <h1 class="glitch-title">Explosion<span class="text-cyan">Quimica</span></h1>
         <p class="subtitle">Desafío interactivo de tablas de valencias químicas</p>
         
         <div class="menu-actions">
@@ -30,7 +30,7 @@
     <!-- VISTA 2: CREAR SALA -->
     <div id="view-create" class="view">
       <div class="card-box cyber-glow">
-        <h2>⚡ CONFIGURAR NUEVO NODO</h2>
+        <h2>CONFIGURACION DEL CONCURSO</h2>
         
         <div class="input-group">
           <label>Título del Concurso</label>
@@ -48,7 +48,7 @@
         </div>
 
         <div class="input-group">
-          <label>Límite Manual de Elementos en Tablero</label>
+          <label>Límite de Elementos en Tablero</label>
           <input type="number" id="create-limit" min="1" value="16">
           <small class="text-muted" style="display: block; margin-top: 4px;">* Las cartas totales serán el triple de este número más comodines.</small>
         </div>
@@ -63,11 +63,11 @@
     <!-- VISTA 3: UNIRSE A SALA -->
     <div id="view-join" class="view">
       <div class="card-box cyber-glow">
-        <h2>🚀 CONECTARSE A SALA</h2>
+        <h2>CONECTARSE A SALA</h2>
         
         <div class="input-group">
-          <label>Tu Nickname</label>
-          <input type="text" id="join-name" placeholder="Ej. ElectronVoltio">
+          <label>Tu nombre/apodo</label>
+          <input type="text" id="join-name" placeholder="Ej. Elulu2211">
         </div>
 
         <div class="input-group">
@@ -85,7 +85,7 @@
     <!-- VISTA 4: LOBBY DEL HOST -->
     <div id="view-host-lobby" class="view">
       <div class="card-box cyber-glow">
-        <h2>📡 SALA DE ESPERA (HOST)</h2>
+        <h2>📡 SALA DE ESPERA </h2>
         <div class="code-badge">CÓDIGO: <span id="host-code-display" class="text-cyan">------</span></div>
         
         <div class="players-container">
