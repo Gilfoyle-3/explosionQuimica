@@ -47,8 +47,11 @@ const valenciaDatabase = [
   { id: "hg", elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "variable" },
 
   // --- MONO-TRIVALENTES ---
-  { id: "au", elem: "Oro", sym: "Au", val: "+1, +2", cat: "variable" },
-  { id: "tl", elem: "Talio", sym: "Tl", val: "+1, +2", cat: "variable" },
+  // CORREGIDO: Au y Tl son mono-trivalentes (+1, +3), no +1,+2 (ese error
+  // hacía que la valencia químicamente correcta de Oro/Talio no existiera
+  // nunca en el mazo, así que el trío jamás podía "reconocerse").
+  { id: "au", elem: "Oro", sym: "Au", val: "+1, +3", cat: "variable" },
+  { id: "tl", elem: "Talio", sym: "Tl", val: "+1, +3", cat: "variable" },
 
   // --- DI-TRIVALENTES ---
   { id: "fe", elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "variable" },
@@ -97,16 +100,16 @@ function getSortedPlayers(room) {
 }
 
 io.on('connection', (socket) => {
-  
+
   socket.on('create_room', ({ title, duration, selectedCategories, elementLimit }) => {
     const roomCode = generateCode();
-    
+
     let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
     filteredPool.sort(() => 0.5 - Math.random());
 
     const limit = parseInt(elementLimit) || filteredPool.length;
     const pool = filteredPool.slice(0, limit);
-    
+
     rooms[roomCode] = {
       title,
       duration: parseInt(duration) * 60,
@@ -116,7 +119,7 @@ io.on('connection', (socket) => {
       players: {},
       deck: []
     };
-    
+
     socket.join(roomCode);
     socket.emit('room_created', { roomCode, title });
   });
@@ -130,7 +133,7 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
 
     socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id, isHost: false });
-    
+
     const playerList = getSortedPlayers(room);
     io.to(roomCode).emit('update_player_list', playerList);
     io.to(roomCode).emit('update_leaderboard', playerList);
