@@ -109,7 +109,7 @@ socket.on('joined_waiting_room', ({ id }) => {
     rulesBox.innerHTML = `
       <h3 style="color: var(--cyber-cyan); margin-bottom: 8px;">📜 REGLAS Y MECÁNICAS DEL CONCURSO</h3>
       <p style="margin-bottom: 6px;">• <b>Cartas de Trío:</b> Cada elemento se divide en 3 cartas independientes: <b>Nombre</b>, <b>Símbolo</b> y <b>Valencia</b>.</p>
-      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan al mismo elemento para ganar puntos (+15 PTS).</p>
+      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan al mismo elemento (Nombre + Símbolo + Valencia) para ganar puntos (+100 PTS).</p>
       <p style="margin-bottom: 6px;">• <b>Cartas Especiales:</b> 🌪️ <b>Tornado</b> (mezcla el tablero) y 💣 <b>Bomba</b> (revela un sector 3x3 secuencialmente).</p>
       <p style="color: var(--cyber-yellow); margin-top: 8px; text-align: center;">⏳ Esperando a que el creador del concurso inicie la partida...</p>
     `;
@@ -231,12 +231,13 @@ function checkTrio() {
 
   if (isTrio) {
     setTimeout(() => {
+      // 'matched' bloquea permanentemente estas 3 cartas (ver handleCardClick)
       c1.classList.add('matched');
       c2.classList.add('matched');
       c3.classList.add('matched');
-      myScore += 15;
+      myScore += 100;
       document.getElementById('player-score').innerText = myScore;
-      socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
+      socket.emit('update_score', { roomCode: currentRoomCode, points: 100 });
       resetTurn();
     }, 300);
   } else {
@@ -258,6 +259,19 @@ function resetTurn() {
 socket.on('apply_tornado', () => {
   const grid = document.getElementById('board-grid');
   if (!grid) return;
+
+  // Tapa cualquier carta volteada que aún no haya sido emparejada
+  // (incluye las de un trío a medio elegir) antes de mover el tablero.
+  Array.from(grid.children).forEach(c => {
+    if (c.classList.contains('flipped') && !c.classList.contains('matched')) {
+      c.classList.remove('flipped');
+      c.innerText = '[ ? ]';
+    }
+  });
+  flippedCards = [];
+  isProcessing = false;
+
+  // Mueve aleatoriamente todas las cartas que no estén ya emparejadas
   const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
   cards.sort(() => 0.5 - Math.random());
   cards.forEach(c => grid.appendChild(c));
