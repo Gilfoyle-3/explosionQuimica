@@ -179,8 +179,12 @@ function renderBoard(deck) {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    // matchKey identifica al elemento (independiente del tipo de carta: nombre/símbolo/valencia)
+    // matchKey identifica al elemento; type indica si es nombre/símbolo/valencia;
+    // val guarda la valencia correcta de ese elemento (para validar por valor,
+    // no por instancia exacta de carta, ya que varios elementos comparten valencia).
     el.dataset.matchKey = String(card.matchKey).trim();
+    el.dataset.type = card.type || '';
+    el.dataset.val = card.val !== undefined && card.val !== null ? String(card.val).trim() : '';
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
@@ -219,22 +223,32 @@ function handleCardClick(cardEl, index) {
   }
 }
 
-// Compara las 3 cartas volteadas por su matchKey, sin importar el orden
-// en que el jugador las haya elegido (nombre/símbolo/valencia en cualquier orden).
+// Un trío es correcto cuando, entre las 3 cartas volteadas (en cualquier orden):
+// - hay exactamente una de tipo "name", una "symbol" y una "valencia"
+// - la carta "name" y la "symbol" son del MISMO elemento (matchKey igual, esto sí es único)
+// - la carta "valencia" muestra el valor CORRECTO de ese elemento (comparando por
+//   valor, no por instancia exacta de carta: varios elementos comparten el mismo
+//   texto de valencia, ej. Li/Na/K/... son todos "+1", y cualquiera de esas cartas
+//   debe contar como válida para completar el trío correspondiente).
 function checkTrio() {
   isProcessing = true;
-  const [c1, c2, c3] = flippedCards;
+  const cards = [...flippedCards];
 
-  const keys = [c1, c2, c3].map(c => (c.dataset.matchKey || '').trim());
+  const nameCard = cards.find(c => c.dataset.type === 'name');
+  const symbolCard = cards.find(c => c.dataset.type === 'symbol');
+  const valenciaCard = cards.find(c => c.dataset.type === 'valencia');
 
-  const isTrio = keys[0] !== '' && keys.every(k => k === keys[0]);
+  const hasAllTypes = !!(nameCard && symbolCard && valenciaCard);
+  const sameElement = hasAllTypes && nameCard.dataset.matchKey === symbolCard.dataset.matchKey;
+  const correctValencia = sameElement &&
+    valenciaCard.dataset.text.trim() === nameCard.dataset.val.trim();
+
+  const isTrio = hasAllTypes && sameElement && correctValencia;
 
   if (isTrio) {
     setTimeout(() => {
       // 'matched' bloquea permanentemente estas 3 cartas (ver handleCardClick)
-      c1.classList.add('matched');
-      c2.classList.add('matched');
-      c3.classList.add('matched');
+      cards.forEach(c => c.classList.add('matched'));
       myScore += 100;
       document.getElementById('player-score').innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 100 });
@@ -243,7 +257,9 @@ function checkTrio() {
   } else {
     // Log de diagnóstico: si crees que una combinación correcta fue
     // rechazada, abre la consola del navegador (F12) y revisa este mensaje.
-    console.warn('Trío NO coincide:', [c1, c2, c3].map(c => ({ texto: c.dataset.text, key: c.dataset.matchKey })));
+    console.warn('Trío NO coincide:', cards.map(c => ({
+      texto: c.dataset.text, tipo: c.dataset.type, key: c.dataset.matchKey, valCorrecta: c.dataset.val
+    })));
     setTimeout(() => {
       flippedCards.forEach(c => {
         c.classList.remove('flipped');
