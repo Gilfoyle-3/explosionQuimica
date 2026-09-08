@@ -147,9 +147,9 @@ io.on('connection', (socket) => {
     let deck = [];
 
     room.pool.forEach((item) => {
-      deck.push({ matchKey: item.id, text: item.elem, isPower: false });
-      deck.push({ matchKey: item.id, text: item.sym, isPower: false });
-      deck.push({ matchKey: item.id, text: item.val, isPower: false });
+      deck.push({ matchKey: item.id, text: item.elem, isPower: false, type: 'name', val: item.val });
+      deck.push({ matchKey: item.id, text: item.sym, isPower: false, type: 'symbol', val: item.val });
+      deck.push({ matchKey: item.id, text: item.val, isPower: false, type: 'valencia', val: item.val });
     });
 
     deck.push({ matchKey: 'power_tornado', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
