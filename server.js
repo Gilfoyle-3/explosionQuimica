@@ -189,7 +189,19 @@ io.on('connection', (socket) => {
     // otro jugador todavía tenga su propia copia de la carta sin voltear.
     if (!room || room.tornadoUsed) return;
     room.tornadoUsed = true;
-    io.to(roomCode).emit('apply_tornado');
+
+    // Generamos UNA sola mezcla (Fisher-Yates) y se la mandamos a todos
+    // los jugadores por igual, para que el tablero quede exactamente en
+    // el mismo orden en todas las pantallas (así la bomba sigue apuntando
+    // al lugar correcto después de un tornado).
+    const n = room.deck.length;
+    const order = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+
+    io.to(roomCode).emit('apply_tornado', { order });
   });
 
   socket.on('trigger_global_bomb', ({ roomCode, centerIndex }) => {
