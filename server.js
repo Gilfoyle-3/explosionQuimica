@@ -117,7 +117,8 @@ io.on('connection', (socket) => {
       hostId: socket.id,
       started: false,
       players: {},
-      deck: []
+      deck: [],
+      tornadoUsed: false
     };
 
     socket.join(roomCode);
@@ -183,6 +184,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('trigger_global_tornado', (roomCode) => {
+    const room = rooms[roomCode];
+    // Una sola vez por sala: si algún jugador ya lo usó, se ignora aunque
+    // otro jugador todavía tenga su propia copia de la carta sin voltear.
+    if (!room || room.tornadoUsed) return;
+    room.tornadoUsed = true;
     io.to(roomCode).emit('apply_tornado');
   });
 
