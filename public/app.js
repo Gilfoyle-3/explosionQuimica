@@ -154,7 +154,10 @@ socket.on('update_player_list', (players) => {
 });
 
 socket.on('update_leaderboard', (players) => {
+  // Mismo evento y mismos datos ordenados para host y jugador:
+  // así el ranking siempre es idéntico y sube/baja en tiempo real en ambos lados.
   renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
+  renderLeaderboard(players, 'player-live-leaderboard', 'player-live-count');
 });
 
 function handleStartGame() {
@@ -171,9 +174,27 @@ socket.on('game_started', ({ deck }) => {
   }
 });
 
+// Crea (si no existe) el contenedor del ranking en vivo dentro de la vista
+// del jugador, para que muestre exactamente el mismo ranking que ve el host.
+function ensurePlayerLeaderboardBox() {
+  const gameView = document.getElementById('view-player-game');
+  if (!gameView || document.getElementById('player-live-leaderboard-box')) return;
+
+  const box = document.createElement('div');
+  box.id = 'player-live-leaderboard-box';
+  box.style.cssText = "margin-top: 20px; padding: 15px; background: rgba(0, 240, 255, 0.05); border: 1px dashed var(--cyber-cyan); border-radius: 8px;";
+  box.innerHTML = `
+    <h3 style="color: var(--cyber-cyan); margin-bottom: 8px; text-align: center;">🏆 Ranking en vivo (<span id="player-live-count">0</span>)</h3>
+    <ul id="player-live-leaderboard" style="list-style: none; padding: 0; margin: 0;"></ul>
+  `;
+  gameView.appendChild(box);
+}
+
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
   grid.innerHTML = '';
+
+  ensurePlayerLeaderboardBox();
 
   deck.forEach((card, index) => {
     const el = document.createElement('div');
