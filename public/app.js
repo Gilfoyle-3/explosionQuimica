@@ -59,18 +59,13 @@ function updateMaxElementLimit() {
 
 function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const target = document.getElementById(viewId);
-  if (target) target.classList.add('active');
+  document.getElementById(viewId).classList.add('active');
 }
 
 function handleCreateRoom() {
-  const titleInput = document.getElementById('create-title');
-  const durationInput = document.getElementById('create-duration');
-  const limitInput = document.getElementById('create-limit');
-
-  const title = titleInput ? titleInput.value.trim() : "Nodo_Química";
-  const duration = durationInput ? durationInput.value : 5;
-  const elementLimit = limitInput ? limitInput.value : 16;
+  const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
+  const duration = document.getElementById('create-duration').value || 5;
+  const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
   
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
@@ -87,24 +82,20 @@ function handleCreateRoom() {
 
 socket.on('room_created', ({ roomCode }) => {
   currentRoomCode = roomCode;
-  const codeDisplay = document.getElementById('host-code-display');
-  if (codeDisplay) codeDisplay.innerText = roomCode;
+  document.getElementById('host-code-display').innerText = roomCode;
   switchView('view-host-lobby');
 });
 
 function handleJoinRoom() {
-  const nameInput = document.getElementById('join-name');
-  const codeInput = document.getElementById('join-code');
-
-  const name = nameInput ? nameInput.value.trim() : "";
-  const roomCode = codeInput ? codeInput.value.trim() : "";
+  const name = document.getElementById('join-name').value.trim();
+  const roomCode = document.getElementById('join-code').value.trim();
 
   if (!name || !roomCode) return alert("⚠️ Ingresa tu nickname y código.");
 
   isHostUser = false;
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
-});
+}
 
 socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
@@ -182,15 +173,13 @@ socket.on('game_started', ({ deck }) => {
 
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
-  if (!grid) return;
   grid.innerHTML = '';
 
   deck.forEach((card, index) => {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    el.dataset.elementId = card.elementId || card.matchKey;
-    el.dataset.matchKey = card.matchKey || card.elementId;
+    el.dataset.matchKey = card.matchKey; // CORREGIDO: Toma el matchKey real que manda el servidor
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
@@ -233,9 +222,10 @@ function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  const id1 = c1.dataset.elementId || c1.dataset.matchKey;
-  const id2 = c2.dataset.elementId || c2.dataset.matchKey;
-  const id3 = c3.dataset.elementId || c3.dataset.matchKey;
+  // Validación exacta usando el matchKey de cada carta
+  const id1 = c1.dataset.matchKey;
+  const id2 = c2.dataset.matchKey;
+  const id3 = c3.dataset.matchKey;
 
   if (id1 && id1 === id2 && id2 === id3) {
     setTimeout(() => {
@@ -243,11 +233,10 @@ function checkTrio() {
       c2.classList.add('matched');
       c3.classList.add('matched');
       myScore += 15;
-      const scoreEl = document.getElementById('player-score');
-      if (scoreEl) scoreEl.innerText = myScore;
+      document.getElementById('player-score').innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
-    }, 100);
+    }, 300);
   } else {
     setTimeout(() => {
       flippedCards.forEach(c => {
@@ -255,7 +244,7 @@ function checkTrio() {
         c.innerText = '[ ? ]';
       });
       resetTurn();
-    }, 300);
+    }, 600);
   }
 }
 
@@ -281,7 +270,7 @@ socket.on('apply_bomb', (centerIndex) => {
   const targetCards = allCards.filter((c, idx) => {
     const r = Math.floor(idx / columns);
     const cCol = idx % columns;
-    return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched') && !c.classList.contains('flipped');
+    return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched');
   });
 
   targetCards.forEach((c, index) => {
@@ -304,22 +293,16 @@ socket.on('timer_tick', (seconds) => {
   const secs = (seconds % 60).toString().padStart(2, '0');
   const fmt = `${mins}:${secs}`;
 
-  const hostTimer = document.getElementById('host-timer');
-  const playerTimer = document.getElementById('player-timer');
-  if (hostTimer) hostTimer.innerText = fmt;
-  if (playerTimer) playerTimer.innerText = fmt;
+  if (document.getElementById('host-timer')) document.getElementById('host-timer').innerText = fmt;
+  if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
 });
 
 socket.on('game_over', (players) => {
   switchView('view-host-live');
   
-  const panelTitle = document.getElementById('host-panel-title');
-  const hostTimer = document.getElementById('host-timer');
-  const gameOverActions = document.getElementById('host-game-over-actions');
-
-  if (panelTitle) panelTitle.innerText = "🏆 ¡CONCURSO FINALIZADO!";
-  if (hostTimer) hostTimer.innerText = "00:00";
-  if (gameOverActions) gameOverActions.style.display = 'block';
+  document.getElementById('host-panel-title').innerText = "🏆 ¡CONCURSO FINALIZADO!";
+  document.getElementById('host-timer').innerText = "00:00";
+  document.getElementById('host-game-over-actions').style.display = 'block';
 
   renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
 
