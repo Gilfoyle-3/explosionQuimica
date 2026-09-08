@@ -59,13 +59,18 @@ function updateMaxElementLimit() {
 
 function switchView(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(viewId).classList.add('active');
+  const target = document.getElementById(viewId);
+  if (target) target.classList.add('active');
 }
 
 function handleCreateRoom() {
-  const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
-  const duration = document.getElementById('create-duration').value || 5;
-  const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
+  const titleInput = document.getElementById('create-title');
+  const durationInput = document.getElementById('create-duration');
+  const limitInput = document.getElementById('create-limit');
+
+  const title = titleInput ? titleInput.value.trim() : "Nodo_Química";
+  const duration = durationInput ? durationInput.value : 5;
+  const elementLimit = limitInput ? limitInput.value : 16;
   
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
@@ -82,13 +87,17 @@ function handleCreateRoom() {
 
 socket.on('room_created', ({ roomCode }) => {
   currentRoomCode = roomCode;
-  document.getElementById('host-code-display').innerText = roomCode;
+  const codeDisplay = document.getElementById('host-code-display');
+  if (codeDisplay) codeDisplay.innerText = roomCode;
   switchView('view-host-lobby');
 });
 
 function handleJoinRoom() {
-  const name = document.getElementById('join-name').value.trim();
-  const roomCode = document.getElementById('join-code').value.trim();
+  const nameInput = document.getElementById('join-name');
+  const codeInput = document.getElementById('join-code');
+
+  const name = nameInput ? nameInput.value.trim() : "";
+  const roomCode = codeInput ? codeInput.value.trim() : "";
 
   if (!name || !roomCode) return alert("⚠️ Ingresa tu nickname y código.");
 
@@ -173,13 +182,13 @@ socket.on('game_started', ({ deck }) => {
 
 function renderBoard(deck) {
   const grid = document.getElementById('board-grid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   deck.forEach((card, index) => {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    // Soporta ambos atributos por compatibilidad con el servidor
     el.dataset.elementId = card.elementId || card.matchKey;
     el.dataset.matchKey = card.matchKey || card.elementId;
     el.dataset.text = card.text;
@@ -228,17 +237,17 @@ function checkTrio() {
   const id2 = c2.dataset.elementId || c2.dataset.matchKey;
   const id3 = c3.dataset.elementId || c3.dataset.matchKey;
 
-  // Validación exacta compatible con cualquier orden
   if (id1 && id1 === id2 && id2 === id3) {
     setTimeout(() => {
       c1.classList.add('matched');
       c2.classList.add('matched');
       c3.classList.add('matched');
       myScore += 15;
-      document.getElementById('player-score').innerText = myScore;
+      const scoreEl = document.getElementById('player-score');
+      if (scoreEl) scoreEl.innerText = myScore;
       socket.emit('update_score', { roomCode: currentRoomCode, points: 15 });
       resetTurn();
-    }, 100); // TIEMPO MÁS CORTO CUANDO ACIERTA
+    }, 100);
   } else {
     setTimeout(() => {
       flippedCards.forEach(c => {
@@ -246,7 +255,7 @@ function checkTrio() {
         c.innerText = '[ ? ]';
       });
       resetTurn();
-    }, 300); // TIEMPO MÁS CORTO CUANDO FALLA
+    }, 300);
   }
 }
 
@@ -272,7 +281,6 @@ socket.on('apply_bomb', (centerIndex) => {
   const targetCards = allCards.filter((c, idx) => {
     const r = Math.floor(idx / columns);
     const cCol = idx % columns;
-    // Respeta y no voltea las cartas que ya están volteadas o emparejadas
     return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched') && !c.classList.contains('flipped');
   });
 
@@ -296,16 +304,22 @@ socket.on('timer_tick', (seconds) => {
   const secs = (seconds % 60).toString().padStart(2, '0');
   const fmt = `${mins}:${secs}`;
 
-  if (document.getElementById('host-timer')) document.getElementById('host-timer').innerText = fmt;
-  if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
+  const hostTimer = document.getElementById('host-timer');
+  const playerTimer = document.getElementById('player-timer');
+  if (hostTimer) hostTimer.innerText = fmt;
+  if (playerTimer) playerTimer.innerText = fmt;
 });
 
 socket.on('game_over', (players) => {
   switchView('view-host-live');
   
-  document.getElementById('host-panel-title').innerText = "🏆 ¡CONCURSO FINALIZADO!";
-  document.getElementById('host-timer').innerText = "00:00";
-  document.getElementById('host-game-over-actions').style.display = 'block';
+  const panelTitle = document.getElementById('host-panel-title');
+  const hostTimer = document.getElementById('host-timer');
+  const gameOverActions = document.getElementById('host-game-over-actions');
+
+  if (panelTitle) panelTitle.innerText = "🏆 ¡CONCURSO FINALIZADO!";
+  if (hostTimer) hostTimer.innerText = "00:00";
+  if (gameOverActions) gameOverActions.style.display = 'block';
 
   renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
 
