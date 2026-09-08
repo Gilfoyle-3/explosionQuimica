@@ -95,7 +95,7 @@ function handleJoinRoom() {
   isHostUser = false;
   currentRoomCode = roomCode;
   socket.emit('join_room', { name, roomCode });
-});
+}
 
 socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
@@ -179,7 +179,8 @@ function renderBoard(deck) {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    el.dataset.elementId = card.elementId || card.matchKey;
+    el.dataset.matchKey = card.matchKey;
+    el.dataset.cardType = card.cardType;
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
@@ -222,12 +223,19 @@ function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  const id1 = c1.dataset.elementId;
-  const id2 = c2.dataset.elementId;
-  const id3 = c3.dataset.elementId;
+  const id1 = c1.dataset.matchKey;
+  const id2 = c2.dataset.matchKey;
+  const id3 = c3.dataset.matchKey;
 
-  // Validación exacta compatible con cualquier orden
-  if (id1 && id1 === id2 && id2 === id3) {
+  const type1 = c1.dataset.cardType;
+  const type2 = c2.dataset.cardType;
+  const type3 = c3.dataset.cardType;
+
+  // Validación que acepta cualquier orden de selección entre Nombre, Símbolo y Valencia del mismo elemento
+  const sameElement = (id1 && id1 === id2 && id2 === id3);
+  const differentTypes = (type1 && type2 && type3 && type1 !== type2 && type1 !== type3 && type2 !== type3);
+
+  if (sameElement && differentTypes) {
     setTimeout(() => {
       c1.classList.add('matched');
       c2.classList.add('matched');
@@ -270,7 +278,7 @@ socket.on('apply_bomb', (centerIndex) => {
   const targetCards = allCards.filter((c, idx) => {
     const r = Math.floor(idx / columns);
     const cCol = idx % columns;
-    // Excluye las cartas que ya están volteadas o matcheadas
+    // Respeta y evita tocar cartas que ya están volteadas o matcheadas
     return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched') && !c.classList.contains('flipped');
   });
 
