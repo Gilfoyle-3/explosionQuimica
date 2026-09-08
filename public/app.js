@@ -216,6 +216,15 @@ function renderBoard(deck) {
   });
 }
 
+// Al usarse (tornado o bomba), la carta especial se esfuma por completo:
+// queda bloqueada, invisible y ya no puede volver a interactuarse ni
+// estorbar visualmente en el tablero.
+function hidePowerCard(cardEl) {
+  cardEl.classList.add('matched');
+  cardEl.style.visibility = 'hidden';
+  cardEl.style.pointerEvents = 'none';
+}
+
 function handleCardClick(cardEl, index) {
   if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
@@ -227,9 +236,14 @@ function handleCardClick(cardEl, index) {
       if (cardEl.dataset.powerType === 'tornado') {
         socket.emit('trigger_global_tornado', currentRoomCode);
       } else if (cardEl.dataset.powerType === 'bomba') {
-        socket.emit('trigger_global_bomb', { roomCode: currentRoomCode, centerIndex: index });
+        // Usamos la posición ACTUAL de la carta en el tablero (no la original
+        // del mazo), porque si ya pasó un tornado, las cartas se reordenaron
+        // y ese índice viejo ya no coincide con su lugar real en la grilla.
+        const grid = document.getElementById('board-grid');
+        const currentIndex = grid ? Array.from(grid.children).indexOf(cardEl) : index;
+        socket.emit('trigger_global_bomb', { roomCode: currentRoomCode, centerIndex: currentIndex });
       }
-      cardEl.classList.add('matched');
+      hidePowerCard(cardEl);
     }, 250);
 
     return;
@@ -296,7 +310,7 @@ function resetTurn() {
   isProcessing = false;
 }
 
-socket.on('apply_tornado', () => {
+socket.on('apply_tornado', ({ order } = {}) => {
   const grid = document.getElementById('board-grid');
   if (!grid) return;
 
@@ -311,19 +325,30 @@ socket.on('apply_tornado', () => {
   flippedCards = [];
   isProcessing = false;
 
-  // Si este jugador todavía tenía su propia carta de Tornado sin usar,
-  // la inutiliza: el servidor ya solo permite un tornado por sala.
+  // Si este jugador todavía tenía su propia carta de Tornado sin usar, el
+  // tornado ya se disparó en la sala: se esfuma (ya no sirve ni molesta).
   Array.from(grid.children).forEach(c => {
     if (c.dataset.powerType === 'tornado' && !c.classList.contains('matched')) {
-      c.classList.add('matched');
-      c.innerText = '🌪️';
+      hidePowerCard(c);
     }
   });
 
-  // Mueve aleatoriamente todas las cartas que no estén ya emparejadas
-  const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
-  cards.sort(() => 0.5 - Math.random());
-  cards.forEach(c => grid.appendChild(c));
+  // Reordena el tablero con la MISMA permutación que recibieron todos los
+  // jugadores, para que cada carta quede en la misma posición en todas las
+  // pantallas (necesario para que la bomba apunte al lugar correcto).
+  if (Array.isArray(order) && order.length) {
+    const byOriginalIndex = {};
+    Array.from(grid.children).forEach(c => { byOriginalIndex[c.dataset.index] = c; });
+    order.forEach(originalIdx => {
+      const c = byOriginalIndex[originalIdx];
+      if (c) grid.appendChild(c);
+    });
+  } else {
+    // Respaldo si no llega la permutación (no debería pasar).
+    const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
+    cards.sort(() => 0.5 - Math.random());
+    cards.forEach(c => grid.appendChild(c));
+  }
 });
 
 socket.on('apply_bomb', (centerIndex) => {
