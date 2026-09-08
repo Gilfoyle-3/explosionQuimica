@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function toggleCategoryCard(cardEl, catId) {
   const checkbox = cardEl.querySelector('.cat-checkbox');
   checkbox.checked = !checkbox.checked;
-  
+
   if (checkbox.checked) {
     cardEl.classList.add('selected');
   } else {
@@ -66,7 +66,7 @@ function handleCreateRoom() {
   const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
   const duration = document.getElementById('create-duration').value || 5;
   const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
-  
+
   const selectedCategories = [];
   document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
     selectedCategories.push(cb.value);
@@ -100,7 +100,7 @@ function handleJoinRoom() {
 socket.on('joined_waiting_room', ({ id }) => {
   mySocketId = id;
   switchView('view-player-waiting');
-  
+
   const waitingView = document.getElementById('view-player-waiting');
   if (waitingView && !document.getElementById('game-rules-box')) {
     const rulesBox = document.createElement('div');
@@ -179,7 +179,8 @@ function renderBoard(deck) {
     const el = document.createElement('div');
     el.classList.add('card');
     el.dataset.index = index;
-    el.dataset.matchKey = card.matchKey; // CORREGIDO: Toma el matchKey real que manda el servidor
+    // matchKey identifica al elemento (independiente del tipo de carta: nombre/símbolo/valencia)
+    el.dataset.matchKey = String(card.matchKey).trim();
     el.dataset.text = card.text;
     el.dataset.isPower = card.isPower ? "true" : "false";
     if (card.isPower) el.dataset.powerType = card.powerType;
@@ -218,16 +219,17 @@ function handleCardClick(cardEl, index) {
   }
 }
 
+// Compara las 3 cartas volteadas por su matchKey, sin importar el orden
+// en que el jugador las haya elegido (nombre/símbolo/valencia en cualquier orden).
 function checkTrio() {
   isProcessing = true;
   const [c1, c2, c3] = flippedCards;
 
-  // Validación exacta usando el matchKey de cada carta
-  const id1 = c1.dataset.matchKey;
-  const id2 = c2.dataset.matchKey;
-  const id3 = c3.dataset.matchKey;
+  const keys = [c1, c2, c3].map(c => (c.dataset.matchKey || '').trim());
 
-  if (id1 && id1 === id2 && id2 === id3) {
+  const isTrio = keys[0] !== '' && keys.every(k => k === keys[0]);
+
+  if (isTrio) {
     setTimeout(() => {
       c1.classList.add('matched');
       c2.classList.add('matched');
@@ -267,10 +269,17 @@ socket.on('apply_bomb', (centerIndex) => {
   const row = Math.floor(centerIndex / columns);
   const col = centerIndex % columns;
 
+  // Ignora las cartas ya emparejadas (matched) y las que el jugador
+  // ya tiene volteadas manualmente (flipped), para no interferir con su turno.
   const targetCards = allCards.filter((c, idx) => {
     const r = Math.floor(idx / columns);
     const cCol = idx % columns;
-    return Math.abs(r - row) <= 1 && Math.abs(cCol - col) <= 1 && !c.classList.contains('matched');
+    return (
+      Math.abs(r - row) <= 1 &&
+      Math.abs(cCol - col) <= 1 &&
+      !c.classList.contains('matched') &&
+      !c.classList.contains('flipped')
+    );
   });
 
   targetCards.forEach((c, index) => {
@@ -299,7 +308,7 @@ socket.on('timer_tick', (seconds) => {
 
 socket.on('game_over', (players) => {
   switchView('view-host-live');
-  
+
   document.getElementById('host-panel-title').innerText = "🏆 ¡CONCURSO FINALIZADO!";
   document.getElementById('host-timer').innerText = "00:00";
   document.getElementById('host-game-over-actions').style.display = 'block';
@@ -309,7 +318,7 @@ socket.on('game_over', (players) => {
   if (!isHostUser) {
     const myRankData = players.find(p => p.id === mySocketId);
     const myRankIndex = players.findIndex(p => p.id === mySocketId) + 1;
-    
+
     const hostLiveBox = document.querySelector('#view-host-live .card-box');
     if (hostLiveBox && !document.getElementById('player-final-notice')) {
       const notice = document.createElement('div');
