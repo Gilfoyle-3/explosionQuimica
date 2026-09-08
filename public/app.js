@@ -241,6 +241,9 @@ function checkTrio() {
       resetTurn();
     }, 300);
   } else {
+    // Log de diagnóstico: si crees que una combinación correcta fue
+    // rechazada, abre la consola del navegador (F12) y revisa este mensaje.
+    console.warn('Trío NO coincide:', [c1, c2, c3].map(c => ({ texto: c.dataset.text, key: c.dataset.matchKey })));
     setTimeout(() => {
       flippedCards.forEach(c => {
         c.classList.remove('flipped');
