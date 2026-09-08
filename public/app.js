@@ -311,6 +311,15 @@ socket.on('apply_tornado', () => {
   flippedCards = [];
   isProcessing = false;
 
+  // Si este jugador todavía tenía su propia carta de Tornado sin usar,
+  // la inutiliza: el servidor ya solo permite un tornado por sala.
+  Array.from(grid.children).forEach(c => {
+    if (c.dataset.powerType === 'tornado' && !c.classList.contains('matched')) {
+      c.classList.add('matched');
+      c.innerText = '🌪️';
+    }
+  });
+
   // Mueve aleatoriamente todas las cartas que no estén ya emparejadas
   const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
   cards.sort(() => 0.5 - Math.random());
