@@ -1,203 +1,345 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+const socket = io();
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+let currentRoomCode = null;
+let mySocketId = null;
+let isHostUser = false;
+let myScore = 0;
+let flippedCards = [];
+let isProcessing = false;
 
-app.use(express.static('public'));
-
-const rooms = {};
-
-const valenciaDatabase = [
-  // --- MONOVALENTES (+1) ---
-  { id: "li", elem: "Litio", sym: "Li", val: "+1", cat: "mono" },
-  { id: "na", elem: "Sodio", sym: "Na", val: "+1", cat: "mono" },
-  { id: "k", elem: "Potasio", sym: "K", val: "+1", cat: "mono" },
-  { id: "rb", elem: "Rubidio", sym: "Rb", val: "+1", cat: "mono" },
-  { id: "ag", elem: "Plata", sym: "Ag", val: "+1", cat: "mono" },
-  { id: "cs", elem: "Cesio", sym: "Cs", val: "+1", cat: "mono" },
-  { id: "fr", elem: "Francio", sym: "Fr", val: "+1", cat: "mono" },
-  { id: "nh4", elem: "Amonio", sym: "NH₄", val: "+1", cat: "mono" },
-
-  // --- DIVALENTES (+2) ---
-  { id: "mg", elem: "Magnesio", sym: "Mg", val: "+2", cat: "di" },
-  { id: "ca", elem: "Calcio", sym: "Ca", val: "+2", cat: "di" },
-  { id: "zn", elem: "Zinc", sym: "Zn", val: "+2", cat: "di" },
-  { id: "ba", elem: "Bario", sym: "Ba", val: "+2", cat: "di" },
-  { id: "be", elem: "Berilio", sym: "Be", val: "+2", cat: "di" },
-  { id: "cd", elem: "Cadmio", sym: "Cd", val: "+2", cat: "di" },
-  { id: "sr", elem: "Estroncio", sym: "Sr", val: "+2", cat: "di" },
-  { id: "ra", elem: "Radio", sym: "Ra", val: "+2", cat: "di" },
-
-  // --- TRIVALENTES (+3) ---
-  { id: "al", elem: "Aluminio", sym: "Al", val: "+3", cat: "tri" },
-  { id: "sc", elem: "Escandio", sym: "Sc", val: "+3", cat: "tri" },
-  { id: "ga", elem: "Galio", sym: "Ga", val: "+3", cat: "tri" },
-  { id: "y", elem: "Ytrio", sym: "Y", val: "+3", cat: "tri" },
-  { id: "in", elem: "Indio", sym: "In", val: "+3", cat: "tri" },
-  { id: "la", elem: "Lantano", sym: "La", val: "+3", cat: "tri" },
-  { id: "ac", elem: "Actinio", sym: "Ac", val: "+3", cat: "tri" },
-  { id: "cr3", elem: "Cromo", sym: "Cr", val: "+3", cat: "tri" },
-  { id: "lu", elem: "Lutecio", sym: "Lu", val: "+3", cat: "tri" },
-
-  // --- MONO-DIVALENTES ---
-  { id: "cu", elem: "Cobre", sym: "Cu", val: "+1, +2", cat: "variable" },
-  { id: "hg", elem: "Mercurio", sym: "Hg", val: "+1, +2", cat: "variable" },
-
-  // --- MONO-TRIVALENTES ---
-  { id: "au", elem: "Oro", sym: "Au", val: "+1, +2", cat: "variable" },
-  { id: "tl", elem: "Talio", sym: "Tl", val: "+1, +2", cat: "variable" },
-
-  // --- DI-TRIVALENTES ---
-  { id: "fe", elem: "Hierro", sym: "Fe", val: "+2, +3", cat: "variable" },
-  { id: "co", elem: "Cobalto", sym: "Co", val: "+2, +3", cat: "variable" },
-  { id: "ni", elem: "Níquel", sym: "Ni", val: "+2, +3", cat: "variable" },
-  { id: "sm", elem: "Samario", sym: "Sm", val: "+2, +3", cat: "variable" },
-  { id: "eu", elem: "Europio", sym: "Eu", val: "+2, +3", cat: "variable" },
-  { id: "yb", elem: "Yterbio", sym: "Yb", val: "+2, +3", cat: "variable" },
-  { id: "tm", elem: "Tulio", sym: "Tm", val: "+2, +3", cat: "variable" },
-
-  // --- DI-TETRAVALENTES ---
-  { id: "pb", elem: "Plomo", sym: "Pb", val: "+2, +4", cat: "tetra" },
-  { id: "ge", elem: "Germanio", sym: "Ge", val: "+2, +4", cat: "tetra" },
-  { id: "sn", elem: "Estaño", sym: "Sn", val: "+2, +4", cat: "tetra" },
-  { id: "pt", elem: "Platino", sym: "Pt", val: "+2, +4", cat: "tetra" },
-  { id: "po", elem: "Polonio", sym: "Po", val: "+2, +4", cat: "tetra" },
-  { id: "pd", elem: "Paladio", sym: "Pd", val: "+2, +4", cat: "tetra" },
-
-  // --- POLIVALENTES ---
-  { id: "cr_poly", elem: "Cromo (Polivalente)", sym: "Cr", val: "+2, +3, +6", cat: "polivalente" },
-  { id: "mn", elem: "Manganeso", sym: "Mn", val: "+2, +3, +4, +6, +7", cat: "polivalente" },
-  { id: "bi", elem: "Bismuto", sym: "Bi", val: "+3, +5", cat: "polivalente" },
-  { id: "ti", elem: "Titanio", sym: "Ti", val: "+2, +3, +4", cat: "polivalente" },
-  { id: "v", elem: "Vanadio", sym: "V", val: "+2, +3, +4, +5", cat: "polivalente" },
-  { id: "mo", elem: "Molibdeno", sym: "Mo", val: "+2, +3, +4, +5, +6", cat: "polivalente" },
-  { id: "w", elem: "Wolframio", sym: "W", val: "+2, +3, +4, +5, +6", cat: "polivalente" },
-  { id: "re", elem: "Renio", sym: "Re", val: "+1, +2, +3, +4, +6, +7", cat: "polivalente" },
-  { id: "os", elem: "Osmio", sym: "Os", val: "+2, +3, +4, +6, +8", cat: "polivalente" },
-  { id: "u", elem: "Uranio", sym: "U", val: "+3, +4, +5, +6", cat: "polivalente" },
-  { id: "am", elem: "Americio", sym: "Am", val: "+3, +4, +5, +6", cat: "polivalente" },
-  { id: "ru", elem: "Rutenio", sym: "Ru", val: "+2, +3, +4", cat: "polivalente" },
-  { id: "np", elem: "Neptunio", sym: "Np", val: "+3, +4, +5, +6", cat: "polivalente" },
-  { id: "ir", elem: "Iridio", sym: "Ir", val: "+2, +3, +4, +6", cat: "polivalente" }
+const categoriesConfig = [
+  { id: "mono", label: "🟢 Monovalentes (+1)", count: 8 },
+  { id: "di", label: "🔵 Divalentes (+2)", count: 8 },
+  { id: "tri", label: "🟣 Trivalentes (+3)", count: 9 },
+  { id: "variable", label: "🟠 Valencia Variable", count: 9 },
+  { id: "tetra", label: "🟡 Di-Tetravalentes (+2, +4)", count: 6 },
+  { id: "polivalente", label: "🔴 Polivalentes", count: 14 }
 ];
 
-function generateCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+window.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('elements-selector-container');
+  if (container) {
+    container.innerHTML = categoriesConfig.map(cat => `
+      <div class="element-card-checkbox selected" onclick="toggleCategoryCard(this, '${cat.id}')">
+        <span>${cat.label}</span>
+        <input type="checkbox" class="cat-checkbox" value="${cat.id}" checked onclick="event.stopPropagation()">
+      </div>
+    `).join('');
+    updateMaxElementLimit();
+  }
+});
+
+function toggleCategoryCard(cardEl, catId) {
+  const checkbox = cardEl.querySelector('.cat-checkbox');
+  checkbox.checked = !checkbox.checked;
+
+  if (checkbox.checked) {
+    cardEl.classList.add('selected');
+  } else {
+    cardEl.classList.remove('selected');
+  }
+  updateMaxElementLimit();
 }
 
-function getSortedPlayers(room) {
-  return Object.entries(room.players).map(([id, p]) => ({
-    id,
-    name: p.name,
-    score: p.score
-  })).sort((a, b) => b.score - a.score);
+function updateMaxElementLimit() {
+  const limitInput = document.getElementById('create-limit');
+  if (!limitInput) return;
+
+  let maxTotal = 0;
+  document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
+    const found = categoriesConfig.find(c => c.id === cb.value);
+    if (found) maxTotal += found.count;
+  });
+
+  limitInput.max = maxTotal || 1;
+  if (parseInt(limitInput.value) > maxTotal) {
+    limitInput.value = maxTotal;
+  }
 }
 
-io.on('connection', (socket) => {
-  
-  socket.on('create_room', ({ title, duration, selectedCategories, elementLimit }) => {
-    const roomCode = generateCode();
-    
-    let filteredPool = valenciaDatabase.filter(item => selectedCategories.includes(item.cat));
-    filteredPool.sort(() => 0.5 - Math.random());
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+}
 
-    const limit = parseInt(elementLimit) || filteredPool.length;
-    const pool = filteredPool.slice(0, limit);
-    
-    rooms[roomCode] = {
-      title,
-      duration: parseInt(duration) * 60,
-      pool,
-      hostId: socket.id,
-      started: false,
-      players: {},
-      deck: []
-    };
-    
-    socket.join(roomCode);
-    socket.emit('room_created', { roomCode, title });
+function handleCreateRoom() {
+  const title = document.getElementById('create-title').value.trim() || "Nodo_Química";
+  const duration = document.getElementById('create-duration').value || 5;
+  const elementLimit = document.getElementById('create-limit') ? document.getElementById('create-limit').value : 16;
+
+  const selectedCategories = [];
+  document.querySelectorAll('.cat-checkbox:checked').forEach(cb => {
+    selectedCategories.push(cb.value);
   });
 
-  socket.on('join_room', ({ name, roomCode }) => {
-    const room = rooms[roomCode];
-    if (!room) return socket.emit('error_message', '⚠️ ACCESO DENEGADO: La sala no existe.');
-    if (room.started) return socket.emit('error_message', '⚠️ ACCESO DENEGADO: El desafío ya inició.');
+  if (selectedCategories.length === 0) {
+    return alert("⚠️ Debes seleccionar al menos una categoría de valencia.");
+  }
 
-    room.players[socket.id] = { name, score: 0 };
-    socket.join(roomCode);
+  isHostUser = true;
+  socket.emit('create_room', { title, duration, selectedCategories, elementLimit });
+}
 
-    socket.emit('joined_waiting_room', { title: room.title, name, id: socket.id, isHost: false });
-    
-    const playerList = getSortedPlayers(room);
-    io.to(roomCode).emit('update_player_list', playerList);
-    io.to(roomCode).emit('update_leaderboard', playerList);
+socket.on('room_created', ({ roomCode }) => {
+  currentRoomCode = roomCode;
+  document.getElementById('host-code-display').innerText = roomCode;
+  switchView('view-host-lobby');
+});
+
+function handleJoinRoom() {
+  const name = document.getElementById('join-name').value.trim();
+  const roomCode = document.getElementById('join-code').value.trim();
+
+  if (!name || !roomCode) return alert("⚠️ Ingresa tu nickname y código.");
+
+  isHostUser = false;
+  currentRoomCode = roomCode;
+  socket.emit('join_room', { name, roomCode });
+}
+
+socket.on('joined_waiting_room', ({ id }) => {
+  mySocketId = id;
+  switchView('view-player-waiting');
+
+  const waitingView = document.getElementById('view-player-waiting');
+  if (waitingView && !document.getElementById('game-rules-box')) {
+    const rulesBox = document.createElement('div');
+    rulesBox.id = 'game-rules-box';
+    rulesBox.style.cssText = "margin-top: 20px; padding: 15px; background: rgba(0, 240, 255, 0.05); border: 1px dashed var(--cyber-cyan); text-align: left; font-size: 0.9rem; color: var(--text-muted); border-radius: 8px;";
+    rulesBox.innerHTML = `
+      <h3 style="color: var(--cyber-cyan); margin-bottom: 8px;">📜 REGLAS Y MECÁNICAS DEL CONCURSO</h3>
+      <p style="margin-bottom: 6px;">• <b>Cartas de Trío:</b> Cada elemento se divide en 3 cartas independientes: <b>Nombre</b>, <b>Símbolo</b> y <b>Valencia</b>.</p>
+      <p style="margin-bottom: 6px;">• <b>Objetivo:</b> Voltea 3 cartas que correspondan al mismo elemento (Nombre + Símbolo + Valencia) para ganar puntos (+100 PTS).</p>
+      <p style="margin-bottom: 6px;">• <b>Cartas Especiales:</b> 🌪️ <b>Tornado</b> (mezcla el tablero) y 💣 <b>Bomba</b> (revela un sector 3x3 secuencialmente).</p>
+      <p style="color: var(--cyber-yellow); margin-top: 8px; text-align: center;">⏳ Esperando a que el creador del concurso inicie la partida...</p>
+    `;
+    waitingView.appendChild(rulesBox);
+  }
+});
+
+socket.on('error_message', (msg) => alert(msg));
+
+function renderLeaderboard(players, targetListId, targetCountId) {
+  const list = document.getElementById(targetListId);
+  const count = document.getElementById(targetCountId);
+
+  if (count) count.innerText = players.length;
+  if (!list) return;
+
+  list.innerHTML = players.map((p, index) => {
+    const rank = index + 1;
+    let medal = `#${rank}`;
+    let rankClass = '';
+
+    if (rank === 1) { medal = '🥇'; rankClass = 'rank-1'; }
+    else if (rank === 2) { medal = '🥈'; rankClass = 'rank-2'; }
+    else if (rank === 3) { medal = '🥉'; rankClass = 'rank-3'; }
+
+    const isMe = p.id === mySocketId ? 'is-me' : '';
+
+    return `
+      <li class="player-row ${rankClass} ${isMe}">
+        <div class="player-info">
+          <span class="player-rank">${medal}</span>
+          <span class="player-name">${p.name} ${p.id === mySocketId ? '(TÚ)' : ''}</span>
+        </div>
+        <span class="player-score">${p.score} PTS</span>
+      </li>
+    `;
+  }).join('');
+}
+
+socket.on('update_player_list', (players) => {
+  renderLeaderboard(players, 'host-player-list', 'player-count');
+});
+
+socket.on('update_leaderboard', (players) => {
+  renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
+});
+
+function handleStartGame() {
+  socket.emit('start_game', currentRoomCode);
+}
+
+socket.on('game_started', ({ deck }) => {
+  myScore = 0;
+  if (isHostUser || document.getElementById('view-host-lobby').classList.contains('active')) {
+    switchView('view-host-live');
+  } else {
+    switchView('view-player-game');
+    renderBoard(deck);
+  }
+});
+
+function renderBoard(deck) {
+  const grid = document.getElementById('board-grid');
+  grid.innerHTML = '';
+
+  deck.forEach((card, index) => {
+    const el = document.createElement('div');
+    el.classList.add('card');
+    el.dataset.index = index;
+    // matchKey identifica al elemento (independiente del tipo de carta: nombre/símbolo/valencia)
+    el.dataset.matchKey = String(card.matchKey).trim();
+    el.dataset.text = card.text;
+    el.dataset.isPower = card.isPower ? "true" : "false";
+    if (card.isPower) el.dataset.powerType = card.powerType;
+
+    el.innerText = '[ ? ]';
+    el.onclick = () => handleCardClick(el, index);
+    grid.appendChild(el);
   });
+}
 
-  socket.on('start_game', (roomCode) => {
-    const room = rooms[roomCode];
-    if (!room || room.hostId !== socket.id) return;
+function handleCardClick(cardEl, index) {
+  if (isProcessing || cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
 
-    room.started = true;
-    let deck = [];
+  if (cardEl.dataset.isPower === "true") {
+    cardEl.classList.add('flipped', 'power-card');
+    cardEl.innerText = cardEl.dataset.text;
 
-    room.pool.forEach((item) => {
-      deck.push({ matchKey: item.id, text: item.elem, isPower: false });
-      deck.push({ matchKey: item.id, text: item.sym, isPower: false });
-      deck.push({ matchKey: item.id, text: item.val, isPower: false });
-    });
-
-    deck.push({ matchKey: 'power_tornado', text: '🌪️ TORNADO', isPower: true, powerType: 'tornado' });
-    deck.push({ matchKey: 'power_bomba', text: '💣 BOMBA 3X3', isPower: true, powerType: 'bomba' });
-
-    room.deck = deck.sort(() => 0.5 - Math.random());
-
-    io.to(roomCode).emit('game_started', {
-      deck: room.deck,
-      duration: room.duration
-    });
-
-    let timer = room.duration;
-    const interval = setInterval(() => {
-      timer--;
-      io.to(roomCode).emit('timer_tick', timer);
-
-      if (timer <= 0) {
-        clearInterval(interval);
-        io.to(roomCode).emit('game_over', getSortedPlayers(room));
+    setTimeout(() => {
+      if (cardEl.dataset.powerType === 'tornado') {
+        socket.emit('trigger_global_tornado', currentRoomCode);
+      } else if (cardEl.dataset.powerType === 'bomba') {
+        socket.emit('trigger_global_bomb', { roomCode: currentRoomCode, centerIndex: index });
       }
-    }, 1000);
-  });
+      cardEl.classList.add('matched');
+    }, 250);
 
-  socket.on('update_score', ({ roomCode, points }) => {
-    const room = rooms[roomCode];
-    if (room && room.players[socket.id]) {
-      room.players[socket.id].score += points;
-      io.to(roomCode).emit('update_leaderboard', getSortedPlayers(room));
+    return;
+  }
+
+  cardEl.classList.add('flipped');
+  cardEl.innerText = cardEl.dataset.text;
+  flippedCards.push(cardEl);
+
+  if (flippedCards.length === 3) {
+    checkTrio();
+  }
+}
+
+// Compara las 3 cartas volteadas por su matchKey, sin importar el orden
+// en que el jugador las haya elegido (nombre/símbolo/valencia en cualquier orden).
+function checkTrio() {
+  isProcessing = true;
+  const [c1, c2, c3] = flippedCards;
+
+  const keys = [c1, c2, c3].map(c => (c.dataset.matchKey || '').trim());
+
+  const isTrio = keys[0] !== '' && keys.every(k => k === keys[0]);
+
+  if (isTrio) {
+    setTimeout(() => {
+      // 'matched' bloquea permanentemente estas 3 cartas (ver handleCardClick)
+      c1.classList.add('matched');
+      c2.classList.add('matched');
+      c3.classList.add('matched');
+      myScore += 100;
+      document.getElementById('player-score').innerText = myScore;
+      socket.emit('update_score', { roomCode: currentRoomCode, points: 100 });
+      resetTurn();
+    }, 300);
+  } else {
+    setTimeout(() => {
+      flippedCards.forEach(c => {
+        c.classList.remove('flipped');
+        c.innerText = '[ ? ]';
+      });
+      resetTurn();
+    }, 600);
+  }
+}
+
+function resetTurn() {
+  flippedCards = [];
+  isProcessing = false;
+}
+
+socket.on('apply_tornado', () => {
+  const grid = document.getElementById('board-grid');
+  if (!grid) return;
+
+  // Tapa cualquier carta volteada que aún no haya sido emparejada
+  // (incluye las de un trío a medio elegir) antes de mover el tablero.
+  Array.from(grid.children).forEach(c => {
+    if (c.classList.contains('flipped') && !c.classList.contains('matched')) {
+      c.classList.remove('flipped');
+      c.innerText = '[ ? ]';
     }
   });
+  flippedCards = [];
+  isProcessing = false;
 
-  socket.on('trigger_global_tornado', (roomCode) => {
-    io.to(roomCode).emit('apply_tornado');
+  // Mueve aleatoriamente todas las cartas que no estén ya emparejadas
+  const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
+  cards.sort(() => 0.5 - Math.random());
+  cards.forEach(c => grid.appendChild(c));
+});
+
+socket.on('apply_bomb', (centerIndex) => {
+  const allCards = Array.from(document.querySelectorAll('.card'));
+  const columns = window.innerWidth <= 600 ? 3 : 4;
+  const row = Math.floor(centerIndex / columns);
+  const col = centerIndex % columns;
+
+  // Ignora las cartas ya emparejadas (matched) y las que el jugador
+  // ya tiene volteadas manualmente (flipped), para no interferir con su turno.
+  const targetCards = allCards.filter((c, idx) => {
+    const r = Math.floor(idx / columns);
+    const cCol = idx % columns;
+    return (
+      Math.abs(r - row) <= 1 &&
+      Math.abs(cCol - col) <= 1 &&
+      !c.classList.contains('matched') &&
+      !c.classList.contains('flipped')
+    );
   });
 
-  socket.on('trigger_global_bomb', ({ roomCode, centerIndex }) => {
-    io.to(roomCode).emit('apply_bomb', centerIndex);
-  });
+  targetCards.forEach((c, index) => {
+    setTimeout(() => {
+      c.classList.add('bomb-highlight');
+      c.innerText = c.dataset.text;
 
-  socket.on('disconnect', () => {
-    for (const code in rooms) {
-      if (rooms[code].players[socket.id]) {
-        delete rooms[code].players[socket.id];
-        const playerList = getSortedPlayers(rooms[code]);
-        io.to(code).emit('update_player_list', playerList);
-        io.to(code).emit('update_leaderboard', playerList);
-      }
-    }
+      setTimeout(() => {
+        if (!c.classList.contains('flipped')) {
+          c.innerText = '[ ? ]';
+        }
+        c.classList.remove('bomb-highlight');
+      }, 2000);
+    }, index * 250);
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`CyberServer Activo en puerto ${PORT}`));
+socket.on('timer_tick', (seconds) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  const fmt = `${mins}:${secs}`;
+
+  if (document.getElementById('host-timer')) document.getElementById('host-timer').innerText = fmt;
+  if (document.getElementById('player-timer')) document.getElementById('player-timer').innerText = fmt;
+});
+
+socket.on('game_over', (players) => {
+  switchView('view-host-live');
+
+  document.getElementById('host-panel-title').innerText = "🏆 ¡CONCURSO FINALIZADO!";
+  document.getElementById('host-timer').innerText = "00:00";
+  document.getElementById('host-game-over-actions').style.display = 'block';
+
+  renderLeaderboard(players, 'host-live-leaderboard', 'host-live-count');
+
+  if (!isHostUser) {
+    const myRankData = players.find(p => p.id === mySocketId);
+    const myRankIndex = players.findIndex(p => p.id === mySocketId) + 1;
+
+    const hostLiveBox = document.querySelector('#view-host-live .card-box');
+    if (hostLiveBox && !document.getElementById('player-final-notice')) {
+      const notice = document.createElement('div');
+      notice.id = 'player-final-notice';
+      notice.style.cssText = "margin-bottom: 15px; padding: 12px; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--cyber-cyan); text-align: center; border-radius: 8px; font-weight: 600;";
+      notice.innerHTML = `Tu posición final: <b style="color: var(--cyber-cyan);">#${myRankIndex}</b> con <b style="color: var(--cyber-yellow);">${myRankData ? myRankData.score : 0} PTS</b>`;
+      hostLiveBox.insertBefore(notice, hostLiveBox.querySelector('.players-container'));
+    }
+  }
+});
