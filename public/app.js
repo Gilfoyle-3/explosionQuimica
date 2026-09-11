@@ -310,7 +310,7 @@ function resetTurn() {
   isProcessing = false;
 }
 
-socket.on('apply_tornado', ({ order } = {}) => {
+socket.on('apply_tornado', () => {
   const grid = document.getElementById('board-grid');
   if (!grid) return;
 
@@ -325,30 +325,11 @@ socket.on('apply_tornado', ({ order } = {}) => {
   flippedCards = [];
   isProcessing = false;
 
-  // Si este jugador todavía tenía su propia carta de Tornado sin usar, el
-  // tornado ya se disparó en la sala: se esfuma (ya no sirve ni molesta).
-  Array.from(grid.children).forEach(c => {
-    if (c.dataset.powerType === 'tornado' && !c.classList.contains('matched')) {
-      hidePowerCard(c);
-    }
-  });
-
-  // Reordena el tablero con la MISMA permutación que recibieron todos los
-  // jugadores, para que cada carta quede en la misma posición en todas las
-  // pantallas (necesario para que la bomba apunte al lugar correcto).
-  if (Array.isArray(order) && order.length) {
-    const byOriginalIndex = {};
-    Array.from(grid.children).forEach(c => { byOriginalIndex[c.dataset.index] = c; });
-    order.forEach(originalIdx => {
-      const c = byOriginalIndex[originalIdx];
-      if (c) grid.appendChild(c);
-    });
-  } else {
-    // Respaldo si no llega la permutación (no debería pasar).
-    const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
-    cards.sort(() => 0.5 - Math.random());
-    cards.forEach(c => grid.appendChild(c));
-  }
+  // Efecto 100% local: mueve aleatoriamente solo las cartas de ESTE
+  // jugador, sin afectar el tablero de nadie más.
+  const cards = Array.from(grid.children).filter(c => !c.classList.contains('matched'));
+  cards.sort(() => 0.5 - Math.random());
+  cards.forEach(c => grid.appendChild(c));
 });
 
 socket.on('apply_bomb', (centerIndex) => {
