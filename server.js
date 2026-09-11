@@ -117,8 +117,7 @@ io.on('connection', (socket) => {
       hostId: socket.id,
       started: false,
       players: {},
-      deck: [],
-      tornadoUsed: false
+      deck: []
     };
 
     socket.join(roomCode);
@@ -184,28 +183,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('trigger_global_tornado', (roomCode) => {
-    const room = rooms[roomCode];
-    // Una sola vez por sala: si algún jugador ya lo usó, se ignora aunque
-    // otro jugador todavía tenga su propia copia de la carta sin voltear.
-    if (!room || room.tornadoUsed) return;
-    room.tornadoUsed = true;
-
-    // Generamos UNA sola mezcla (Fisher-Yates) y se la mandamos a todos
-    // los jugadores por igual, para que el tablero quede exactamente en
-    // el mismo orden en todas las pantallas (así la bomba sigue apuntando
-    // al lugar correcto después de un tornado).
-    const n = room.deck.length;
-    const order = Array.from({ length: n }, (_, i) => i);
-    for (let i = n - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-
-    io.to(roomCode).emit('apply_tornado', { order });
+    // Las cartas especiales son independientes por jugador: solo afectan
+    // el tablero de quien la usó, nunca al resto de la sala.
+    socket.emit('apply_tornado');
   });
 
   socket.on('trigger_global_bomb', ({ roomCode, centerIndex }) => {
-    io.to(roomCode).emit('apply_bomb', centerIndex);
+    socket.emit('apply_bomb', centerIndex);
   });
 
   socket.on('disconnect', () => {
